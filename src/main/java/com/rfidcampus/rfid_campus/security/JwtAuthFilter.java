@@ -27,7 +27,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        // ✅ Permitir route libre para asistencia RFID
+        String path = request.getServletPath();
+        if (path.startsWith("/api/asistencia")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // ✅ Permitir login y register sin JWT
+        if (path.startsWith("/api/auth")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         final String authHeader = request.getHeader("Authorization");
         final String prefix = "Bearer ";
