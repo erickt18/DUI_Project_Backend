@@ -4,6 +4,7 @@ import com.rfidcampus.rfid_campus.dto.AsistenciaRequest;
 import com.rfidcampus.rfid_campus.service.AsistenciaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Map;
 
@@ -17,12 +18,11 @@ public class AsistenciaController {
         this.asistenciaService = asistenciaService;
     }
 
-    // ✅ Registrar asistencia (RFID)
+    // Registrar asistencia (solo profesores)
+    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/marcar")
     public ResponseEntity<?> marcar(@RequestBody AsistenciaRequest req) {
-
         String result = asistenciaService.registrarAsistencia(req.getUid(), req.getAula());
-
         return ResponseEntity.ok(
             Map.of(
                 "status", result,
@@ -32,19 +32,22 @@ public class AsistenciaController {
         );
     }
 
-    // ✅ Consultar historial por ID del estudiante
+    // Consultar historial por ID del estudiante (solo profesores)
+    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/historial/estudiante/{id}")
     public ResponseEntity<?> historialPorEstudiante(@PathVariable Long id) {
         return ResponseEntity.ok(asistenciaService.obtenerAsistenciaPorEstudiante(id));
     }
 
-    // ✅ Consultar historial por aula
+    // Consultar historial por aula (solo profesores)
+    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/historial/aula/{aula}")
     public ResponseEntity<?> historialPorAula(@PathVariable String aula) {
         return ResponseEntity.ok(asistenciaService.obtenerAsistenciaPorAula(aula));
     }
 
-    // ✅ Consultar historial por UID de tarjeta
+    // Consultar historial por UID de tarjeta (solo profesores)
+    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/historial/uid/{uid}")
     public ResponseEntity<?> historialPorUid(@PathVariable String uid) {
         return ResponseEntity.ok(asistenciaService.obtenerAsistenciaPorUid(uid));

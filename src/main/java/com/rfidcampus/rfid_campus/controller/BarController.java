@@ -7,6 +7,8 @@ import com.rfidcampus.rfid_campus.service.TarjetaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @RestController
 @RequestMapping("/api/bar")
 public class BarController {
@@ -17,7 +19,8 @@ public class BarController {
         this.tarjetaService = tarjetaService;
     }
 
-    // Escanear tarjeta (validar y obtener info)
+    // Escanear tarjeta (solo estudiante)
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/scan")
     public ResponseEntity<BarResponse> scanCard(@RequestBody BarRequest data) {
         try {
@@ -29,7 +32,8 @@ public class BarController {
         }
     }
 
-    // Realizar pago
+    // Realizar pago (solo estudiante)
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/pagar")
     public ResponseEntity<BarResponse> pagar(@RequestBody BarRequest data) {
         try {
@@ -43,7 +47,8 @@ public class BarController {
         }
     }
 
-    // Recargar saldo
+    // Recargar saldo (solo admin)
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/recargar")
     public ResponseEntity<BarResponse> recargar(@RequestBody BarRequest data) {
         try {

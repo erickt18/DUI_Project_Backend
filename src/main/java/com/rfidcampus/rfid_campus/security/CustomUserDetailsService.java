@@ -21,13 +21,14 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Estudiante est = estudianteRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("No existe estudiante con email: " + email));
-
-        // Rol estudiante
+        
+        // Obtén el nombre del rol desde la entidad Rol asociada
+        String rol = est.getRol().getNombre().toUpperCase(); // Debe retornar "ADMIN", "TEACHER" o "STUDENT"
+        
         return User.withUsername(est.getEmail())
                 .password(est.getPasswordHash())
-                .roles("STUDENT")
+                .roles(rol) // Spring le agrega el prefijo "ROLE_"
                 .accountLocked(Boolean.FALSE.equals(est.getActivo()))
                 .build();
-
     }
 }

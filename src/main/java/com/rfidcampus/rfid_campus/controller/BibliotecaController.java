@@ -6,6 +6,7 @@ import com.rfidcampus.rfid_campus.model.RegistroBiblioteca;
 import com.rfidcampus.rfid_campus.service.BibliotecaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ public class BibliotecaController {
         this.bibliotecaService = bibliotecaService;
     }
 
-    // ✅ Registrar préstamo con RFID
+    // Registrar préstamo con RFID (sin restricción de rol)
     @PostMapping("/prestamo")
     public ResponseEntity<?> registrarPrestamo(@RequestBody PrestamoRequest req) {
         try {
@@ -40,7 +41,7 @@ public class BibliotecaController {
         }
     }
 
-    // ✅ Registrar devolución
+    // Registrar devolución
     @PutMapping("/devolucion/{idPrestamo}")
     public ResponseEntity<?> registrarDevolucion(@PathVariable Long idPrestamo) {
         try {
@@ -55,31 +56,32 @@ public class BibliotecaController {
         }
     }
 
-    // ✅ Ver préstamos activos de un estudiante
+    // Préstamos activos de un estudiante
     @GetMapping("/prestamos/activos/{idEstudiante}")
     public ResponseEntity<List<RegistroBiblioteca>> prestamosActivos(@PathVariable Long idEstudiante) {
         return ResponseEntity.ok(bibliotecaService.obtenerPrestamosActivos(idEstudiante));
     }
 
-    // ✅ Historial completo de préstamos
+    // Historial completo de préstamos
     @GetMapping("/prestamos/historial/{idEstudiante}")
     public ResponseEntity<List<RegistroBiblioteca>> historial(@PathVariable Long idEstudiante) {
         return ResponseEntity.ok(bibliotecaService.obtenerHistorial(idEstudiante));
     }
 
-    // ✅ Catálogo de libros disponibles
+    // Catálogo de libros disponibles
     @GetMapping("/catalogo/disponibles")
     public ResponseEntity<List<Libro>> catalogoDisponibles() {
         return ResponseEntity.ok(bibliotecaService.listarLibrosDisponibles());
     }
 
-    // ✅ Buscar libros por título
+    // Buscar libros por título
     @GetMapping("/catalogo/buscar")
     public ResponseEntity<List<Libro>> buscarLibros(@RequestParam String titulo) {
         return ResponseEntity.ok(bibliotecaService.buscarPorTitulo(titulo));
     }
 
-    // ✅ Agregar libro al catálogo
+    // SOLO ADMIN puede agregar libro al catálogo
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/catalogo/agregar")
     public ResponseEntity<?> agregarLibro(@RequestBody Libro libro) {
         try {
@@ -87,6 +89,21 @@ public class BibliotecaController {
             return ResponseEntity.ok(Map.of(
                     "mensaje", "Libro agregado al catálogo",
                     "libro", saved
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // SOLO ADMIN puede eliminar libro del catálogo (nuevo método)
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/catalogo/eliminar/{id}")
+    public ResponseEntity<?> eliminarLibro(@PathVariable Long id) {
+        try {
+            bibliotecaService.eliminarLibro(id);
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Libro eliminado correctamente",
+                    "id", id
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

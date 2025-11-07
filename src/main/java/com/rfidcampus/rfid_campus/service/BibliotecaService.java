@@ -21,8 +21,8 @@ public class BibliotecaService {
     private final TarjetaRfidRepository tarjetaRepo;
 
     public BibliotecaService(LibroRepository libroRepo,
-                             RegistroBibliotecaRepository registroRepo,
-                             TarjetaRfidRepository tarjetaRepo) {
+                            RegistroBibliotecaRepository registroRepo,
+                            TarjetaRfidRepository tarjetaRepo) {
         this.libroRepo = libroRepo;
         this.registroRepo = registroRepo;
         this.tarjetaRepo = tarjetaRepo;
@@ -31,7 +31,6 @@ public class BibliotecaService {
     // Registrar préstamo
     @Transactional
     public RegistroBiblioteca registrarPrestamo(String uid, Long idLibro, Integer diasPrestamo) {
-        // Validar tarjeta
         TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(uid, "ACTIVA")
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
 
@@ -40,7 +39,6 @@ public class BibliotecaService {
             throw new RuntimeException("Tarjeta no asignada a ningún estudiante");
         }
 
-        // Validar libro
         Libro libro = libroRepo.findById(idLibro)
                 .orElseThrow(() -> new RuntimeException("Libro no encontrado"));
 
@@ -48,15 +46,12 @@ public class BibliotecaService {
             throw new RuntimeException("Libro no disponible");
         }
 
-        // Marcar libro como no disponible
         libro.setDisponible(false);
         libroRepo.save(libro);
 
-        // Calcular fecha de devolución (por defecto 7 días)
         int dias = diasPrestamo != null ? diasPrestamo : 7;
         LocalDateTime fechaDevolucion = LocalDateTime.now().plusDays(dias);
 
-        // Crear registro
         RegistroBiblioteca registro = RegistroBiblioteca.builder()
                 .estudiante(estudiante)
                 .libro(libro)
@@ -78,12 +73,10 @@ public class BibliotecaService {
             throw new RuntimeException("El libro ya fue devuelto");
         }
 
-        // Actualizar registro
         registro.setEstado("DEVUELTO");
         registro.setFechaDevolucionReal(LocalDateTime.now());
         registroRepo.save(registro);
 
-        // Marcar libro como disponible
         Libro libro = registro.getLibro();
         libro.setDisponible(true);
         libroRepo.save(libro);
@@ -114,5 +107,11 @@ public class BibliotecaService {
     // Guardar libro (para catálogo)
     public Libro guardarLibro(Libro libro) {
         return libroRepo.save(libro);
+    }
+
+    // Eliminar libro por id (NUEVO)
+    @Transactional
+    public void eliminarLibro(Long id) {
+        libroRepo.deleteById(id);
     }
 }

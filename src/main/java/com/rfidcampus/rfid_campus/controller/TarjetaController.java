@@ -6,6 +6,7 @@ import com.rfidcampus.rfid_campus.model.TarjetaRfid;
 import com.rfidcampus.rfid_campus.service.TarjetaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -20,16 +21,16 @@ public class TarjetaController {
         this.tarjetaService = tarjetaService;
     }
 
-    // ✅ CORREGIDO: Registrar tarjeta sin estudiante
+    // Solo admin puede registrar tarjeta sin estudiante
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/registrar")
     public ResponseEntity<?> registrar(@RequestBody Map<String, String> body) {
         try {
             TarjetaRfid tarjeta = TarjetaRfid.builder()
                     .tarjetaUid(body.get("tarjetaUid"))
                     .estado(body.get("estado"))
-                    .estudiante(null) // Sin asignar por ahora
+                    .estudiante(null)
                     .build();
-            
             TarjetaRfid saved = tarjetaService.guardar(tarjeta);
             return ResponseEntity.ok(Map.of(
                 "mensaje", "Tarjeta registrada exitosamente",
@@ -41,7 +42,8 @@ public class TarjetaController {
         }
     }
 
-    // ✅ Asignar tarjeta usando DTO
+    // Solo admin puede asignar tarjeta
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/asignar")
     public ResponseEntity<?> asignarTarjeta(@RequestBody AsignarTarjetaDTO dto) {
         try {
@@ -56,7 +58,8 @@ public class TarjetaController {
         }
     }
 
-    // ✅ Consultar saldo
+    // Consultar saldo (solo estudiante)
+    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/saldo/{uid}")
     public ResponseEntity<?> consultarSaldo(@PathVariable String uid) {
         try {
@@ -67,13 +70,14 @@ public class TarjetaController {
         }
     }
 
-    // ✅ Listar tarjetas
+    // Listar tarjetas (puede ser solo admin si quieres, aquí lo dejo público)
     @GetMapping("/listar")
     public List<TarjetaRfid> listar() {
         return tarjetaService.listar();
     }
 
-    // ✅ Recargar saldo
+    // Recargar saldo SOLO ADMIN
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/recargar")
     public ResponseEntity<?> recargar(@RequestBody Map<String, Object> body) {
         try {
@@ -90,7 +94,8 @@ public class TarjetaController {
         }
     }
 
-    // ✅ Pagar
+    // Pagar SOLO ESTUDIANTE
+    @PreAuthorize("hasRole('STUDENT')")
     @PutMapping("/pagar")
     public ResponseEntity<?> pagar(@RequestBody Map<String, Object> body) {
         try {

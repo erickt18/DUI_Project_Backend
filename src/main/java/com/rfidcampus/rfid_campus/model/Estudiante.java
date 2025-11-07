@@ -37,4 +37,12 @@ public class Estudiante {
     @Column(name = "uid_tarjeta", unique = true, length = 100)
     private String uidTarjeta;
 
+    @ManyToOne
+    @JoinColumn(name = "rol_id", nullable = false)
+    private Rol rol;
+
+    // Getter directo para obtener el nombre del rol
+    public String getRolNombre() {
+        return rol != null ? rol.getNombre() : "STUDENT";
+    }
 }

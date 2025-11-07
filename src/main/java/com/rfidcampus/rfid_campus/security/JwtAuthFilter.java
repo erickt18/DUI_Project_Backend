@@ -5,13 +5,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -30,14 +33,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // ✅ Permitir route libre para asistencia RFID
         String path = request.getServletPath();
-        if (path.startsWith("/api/asistencia")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // ✅ Permitir login y register sin JWT
+        // Solo exceptúa /api/auth, deja que el filtro procese /api/asistencia normalmente
         if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -54,18 +51,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails user = userDetailsService.loadUserByUsername(username);
-
-            if (jwtService.isTokenValid(jwt, user.getUsername())) {
+            if (jwtService.isTokenValid(jwt, username)) {
+                var claims = jwtService.extractAllClaims(jwt);
+                var authoritiesList = (List<?>) claims.get("authorities");
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                if (authoritiesList != null) {
+                    for (Object authority : authoritiesList) {
+                        authorities.add(new SimpleGrantedAuthority(authority.toString()));
+                    }
+                }
+                UserDetails user = userDetailsService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                user, null, user.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(user, null, authorities);
 
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }

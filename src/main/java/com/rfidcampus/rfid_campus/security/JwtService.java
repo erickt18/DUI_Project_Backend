@@ -25,7 +25,7 @@ public class JwtService {
     public String generateToken(String subject, Map<String, Object> extraClaims) {
         return Jwts.builder()
                 .setClaims(extraClaims)
-                .setSubject(subject)                 // normalmente el email
+                .setSubject(subject) // normalmente el email
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -43,6 +43,15 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
         return resolver.apply(claims);
+    }
+
+    // FUNCIÓN CLAVE PARA EL FILTRO JWT:
+    public Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public boolean isTokenValid(String token, String username) {

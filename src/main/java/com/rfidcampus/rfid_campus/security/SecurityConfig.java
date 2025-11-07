@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod; // <--- IMPORTANTE
 
 @Configuration
 public class SecurityConfig {
@@ -21,12 +22,12 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
-                          CustomUserDetailsService userDetailsService) {
+                         CustomUserDetailsService userDetailsService) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
     }
 
-    // ✅ CADENA 1: Solo asistencia RFID
+    // CADENA 1: Solo asistencia RFID
     @Bean
     @Order(1)
     public SecurityFilterChain attendanceChain(HttpSecurity http) throws Exception {
@@ -34,17 +35,21 @@ public class SecurityConfig {
             .securityMatcher("/api/asistencia/**")
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(ex -> ex
-                .accessDeniedHandler((req, res, exc) -> res.setStatus(HttpServletResponse.SC_OK))
+                .accessDeniedHandler((req, res, exc) -> res.setStatus(HttpServletResponse.SC_FORBIDDEN))
             )
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/error").permitAll()   // ✅ NECESARIO
-                .anyRequest().permitAll()
-            );
+                .requestMatchers("/error").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // <--- ESTA LÍNEA
+                .anyRequest().authenticated()
+            )
+            .authenticationProvider(daoAuthProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
-    // ✅ CADENA 2: Sistema normal con JWT
+    // CADENA 2: Sistema normal con JWT
     @Bean
     @Order(2)
     public SecurityFilterChain appChain(HttpSecurity http) throws Exception {
@@ -55,12 +60,12 @@ public class SecurityConfig {
             )
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/error").permitAll()            // ✅ NECESARIO TAMBIÉN AQUÍ
+                .requestMatchers("/error").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // <--- ESTA LÍNEA TAMBIÉN
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/tarjetas/**").permitAll()
-                .requestMatchers("/api/bar/**").permitAll()
-                .requestMatchers("/api/biblioteca/**").permitAll()
-                // asistencia ya está en chain 1
+                .requestMatchers("/api/tarjetas/**").authenticated()
+                .requestMatchers("/api/bar/**").authenticated()
+                .requestMatchers("/api/biblioteca/**").authenticated()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(daoAuthProvider())
