@@ -3,19 +3,20 @@ package com.rfidcampus.rfid_campus.security;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.http.HttpMethod; // <--- IMPORTANTE
+import org.springframework.http.HttpMethod;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -27,31 +28,7 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    // CADENA 1: Solo asistencia RFID
     @Bean
-    @Order(1)
-    public SecurityFilterChain attendanceChain(HttpSecurity http) throws Exception {
-        http
-            .securityMatcher("/api/asistencia/**")
-            .csrf(csrf -> csrf.disable())
-            .exceptionHandling(ex -> ex
-                .accessDeniedHandler((req, res, exc) -> res.setStatus(HttpServletResponse.SC_FORBIDDEN))
-            )
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/error").permitAll()
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // <--- ESTA LÍNEA
-                .anyRequest().authenticated()
-            )
-            .authenticationProvider(daoAuthProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
-
-    // CADENA 2: Sistema normal con JWT
-    @Bean
-    @Order(2)
     public SecurityFilterChain appChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
@@ -61,7 +38,7 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/error").permitAll()
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // <--- ESTA LÍNEA TAMBIÉN
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/tarjetas/**").authenticated()
                 .requestMatchers("/api/bar/**").authenticated()

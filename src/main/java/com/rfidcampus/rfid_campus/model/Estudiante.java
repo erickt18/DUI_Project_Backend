@@ -37,7 +37,7 @@ public class Estudiante {
     @Column(name = "uid_tarjeta", unique = true, length = 100)
     private String uidTarjeta;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
 

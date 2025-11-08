@@ -20,10 +20,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Estudiante est = estudianteRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("No existe estudiante con email: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("No existe usuario con email: " + email));
         
         // Obtén el nombre del rol desde la entidad Rol asociada
-        String rol = est.getRol().getNombre().toUpperCase(); // Debe retornar "ADMIN", "TEACHER" o "STUDENT"
+        String rol = est.getRol().getNombre().toUpperCase(); // Debe retornar "ADMIN" o "STUDENT"
         
         return User.withUsername(est.getEmail())
                 .password(est.getPasswordHash())
