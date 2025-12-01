@@ -1,5 +1,7 @@
 package com.rfidcampus.rfid_campus.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,4 +47,13 @@ public class Estudiante {
     public String getRolNombre() {
         return rol != null ? rol.getNombre() : "STUDENT";
     }
+
+    @JsonIgnoreProperties("estudiante")
+    @OneToOne(mappedBy = "estudiante", fetch = FetchType.LAZY)
+    private TarjetaRfid tarjeta;
+
+    public TarjetaRfid getTarjeta() {
+        return tarjeta;
+    }
+
 }

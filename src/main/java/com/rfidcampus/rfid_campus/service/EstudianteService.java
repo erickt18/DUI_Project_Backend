@@ -28,12 +28,10 @@ public class EstudianteService {
         return estudianteRepository.findByEmail(email);
     }
 
-    // NUEVO: Buscar por ID
     public Optional<Estudiante> buscarPorId(Long id) {
         return estudianteRepository.findById(id);
     }
 
-    // NUEVO: Buscar por UID de tarjeta
     public Optional<Estudiante> buscarPorUid(String uid) {
         return estudianteRepository.findByUidTarjeta(uid);
     }

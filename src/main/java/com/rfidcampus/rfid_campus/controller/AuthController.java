@@ -20,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+
 public class AuthController {
 
     private final AuthenticationManager authManager;
@@ -63,27 +64,28 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegistroRequest req) {
-        if (estudianteRepository.findByEmail(req.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email ya registrado");
-        }
-
-        // Buscar rol en la base de datos
-        Rol rol = rolRepository.findByNombre(req.getRolNombre())
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
-
-        Estudiante est = Estudiante.builder()
-                .nombreCompleto(req.getNombreCompleto())
-                .carrera(req.getCarrera())
-                .email(req.getEmail())
-                .passwordHash(encoder.encode(req.getPassword()))
-                .activo(true)
-                .rol(rol)
-                .saldo(0.0)
-                .build();
-
-        estudianteRepository.save(est);
-
-        return ResponseEntity.ok("Usuario registrado correctamente");
+public ResponseEntity<?> register(@RequestBody RegistroRequest req) {
+    if (estudianteRepository.findByEmail(req.getEmail()).isPresent()) {
+        return ResponseEntity.badRequest().body(Map.of("error", "Email ya registrado"));
     }
+    try {
+        Rol rol = rolRepository.findByNombre(req.getRolNombre())
+            .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+        Estudiante est = Estudiante.builder()
+            .nombreCompleto(req.getNombreCompleto())
+            .carrera(req.getCarrera())
+            .email(req.getEmail())
+            .passwordHash(encoder.encode(req.getPassword()))
+            .activo(true)
+            .rol(rol)
+            .saldo(0.0)
+            .build();
+        estudianteRepository.save(est);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado correctamente"));
+    } catch (Exception ex) {
+        return ResponseEntity.status(500).body(Map.of("error", "Error interno: " + ex.getMessage()));
+    }
+}
+
+
 }
