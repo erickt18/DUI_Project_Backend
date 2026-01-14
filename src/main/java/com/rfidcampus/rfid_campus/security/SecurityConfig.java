@@ -1,8 +1,10 @@
 package com.rfidcampus.rfid_campus.security;
 
-import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -13,12 +15,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableMethodSecurity
@@ -57,10 +58,10 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
 
-                        // ✅ Primero endpoint específico
+                        //  Primero endpoint específico
                         .requestMatchers("/api/tarjetas/bloquear").hasAuthority("STUDENT")
 
-                        // ✅ Luego reglas generales
+                        //  Luego reglas generales
                         .requestMatchers("/api/dashboard/**").authenticated()
                         .requestMatchers("/api/transacciones/**").authenticated()
                         .requestMatchers("/api/tarjetas/**").authenticated()
