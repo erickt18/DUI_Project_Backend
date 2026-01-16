@@ -1,215 +1,105 @@
 package com.rfidcampus.rfid_campus.service;
 
-import com.rfidcampus.rfid_campus.dto.CompraMultipleRequest;
 import com.rfidcampus.rfid_campus.dto.CompraRequest;
-import com.rfidcampus.rfid_campus.model.Estudiante;
+import com.rfidcampus.rfid_campus.model.Usuario;
 import com.rfidcampus.rfid_campus.model.Producto;
 import com.rfidcampus.rfid_campus.model.TarjetaRfid;
 import com.rfidcampus.rfid_campus.model.Transaccion;
-import com.rfidcampus.rfid_campus.repository.EstudianteRepository;
+import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 import com.rfidcampus.rfid_campus.repository.ProductoRepository;
 import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository;
 import com.rfidcampus.rfid_campus.repository.TransaccionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class TarjetaService {
 
     private final TarjetaRfidRepository tarjetaRepo;
-    private final EstudianteRepository estudianteRepo;
+    private final UsuarioRepository usuarioRepo; // Antes estudianteRepo
     private final TransaccionRepository transaccionRepo;
     private final ProductoRepository productoRepo;
 
-    public TarjetaService(
-            TarjetaRfidRepository tarjetaRepo,
-            EstudianteRepository estudianteRepo,
-            TransaccionRepository transaccionRepo,
-            ProductoRepository productoRepo) {
+    public TarjetaService(TarjetaRfidRepository tarjetaRepo, UsuarioRepository usuarioRepo,
+                          TransaccionRepository transaccionRepo, ProductoRepository productoRepo) {
         this.tarjetaRepo = tarjetaRepo;
-        this.estudianteRepo = estudianteRepo;
+        this.usuarioRepo = usuarioRepo;
         this.transaccionRepo = transaccionRepo;
         this.productoRepo = productoRepo;
     }
 
-    public TarjetaRfid guardar(TarjetaRfid tarjeta) {
-        if (tarjeta.getTarjetaUid() != null) {
-            tarjeta.setTarjetaUid(normaliza(tarjeta.getTarjetaUid()));
-        }
-        return tarjetaRepo.save(tarjeta);
-    }
-
-    public List<TarjetaRfid> listar() {
-        return tarjetaRepo.findAll();
-    }
-
-    // ✅ Búsqueda robusta por UID (trim)
-    public TarjetaRfid buscarPorUid(String uid) {
-        String u = normaliza(uid);
-        return tarjetaRepo.findByTarjetaUid(u)
-                .orElseThrow(() -> new RuntimeException("Tarjeta no existe en el sistema"));
-    }
-
+    // ✅ MÉTODO CORREGIDO: Usa CompraRequest y BigDecimal
     @Transactional
-    public TarjetaRfid asignarTarjeta(String tarjetaUid, Long idEstudiante) {
-        TarjetaRfid tarjeta = buscarPorUid(tarjetaUid);
-        Estudiante estudiante = estudianteRepo.findById(idEstudiante)
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+    public Map<String, Object> procesarCompraMultiple(CompraRequest req) {
+        
+        // 1. Validar tarjeta
+        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(req.getTarjetaUid())
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
 
-        if (tarjeta.getEstudiante() != null
-                && !tarjeta.getEstudiante().getId().equals(idEstudiante)) {
-            throw new RuntimeException("La tarjeta ya está asignada a otro estudiante");
+        if (!"ACTIVA".equalsIgnoreCase(tarjeta.getEstado())) {
+            throw new RuntimeException("La tarjeta está BLOQUEADA o inactiva");
         }
 
-        tarjeta.setEstudiante(estudiante);
-        estudiante.setUidTarjeta(tarjeta.getTarjetaUid());
-        estudianteRepo.save(estudiante);
-        return tarjetaRepo.save(tarjeta);
-    }
-
-    @Transactional
-    public Estudiante recargarSaldo(String uid, Double monto) {
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(normaliza(uid), "ACTIVA")
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
-
-        Estudiante est = tarjeta.getEstudiante();
-        est.setSaldo(est.getSaldo() + monto);
-        estudianteRepo.save(est);
-
-        transaccionRepo.save(
-                Transaccion.builder()
-                        .estudiante(est)
-                        .tipo("RECARGA")
-                        .monto(monto)
-                        .fecha(LocalDateTime.now())
-                        .build());
-
-        return est;
-    }
-
-    public Double consultarSaldo(String uid) {
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(normaliza(uid), "ACTIVA")
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
-        return tarjeta.getEstudiante().getSaldo();
-    }
-
-    @Transactional
-    public Estudiante pagar(String uid, Double monto) {
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUidAndEstado(normaliza(uid), "ACTIVA")
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
-
-        Estudiante est = tarjeta.getEstudiante();
-        if (est.getSaldo() < monto) {
-            throw new RuntimeException("Saldo insuficiente");
+        // 2. Obtener Usuario
+        Usuario usuario = tarjeta.getUsuario();
+        if (usuario == null) {
+            throw new RuntimeException("Tarjeta sin usuario asignado");
         }
 
-        est.setSaldo(est.getSaldo() - monto);
-        estudianteRepo.save(est);
-
-        transaccionRepo.save(
-                Transaccion.builder()
-                        .estudiante(est)
-                        .tipo("COMPRA_BAR")
-                        .monto(monto)
-                        .fecha(LocalDateTime.now())
-                        .build());
-
-        return est;
-    }
-
-    @Transactional
-    public TarjetaRfid bloquearTarjeta(String uid) {
-        TarjetaRfid t = buscarPorUid(uid);
-        t.setEstado("BLOQUEADA");
-        return tarjetaRepo.save(t);
-    }
-
-    @Transactional
-    public TarjetaRfid desbloquearTarjeta(String uid) {
-        TarjetaRfid t = buscarPorUid(uid);
-        t.setEstado("ACTIVA");
-        return tarjetaRepo.save(t);
-    }
-
-    @Transactional
-    public TarjetaRfid bloquearTarjetaPorEstudiante(String email) {
-        Estudiante est = estudianteRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
-
-        TarjetaRfid tarjeta = tarjetaRepo.findByEstudiante(est)
-                .orElseThrow(() -> new RuntimeException("No tienes una tarjeta asignada"));
-
-        tarjeta.setEstado("BLOQUEADA");
-        return tarjetaRepo.save(tarjeta);
-    }
-
-    private String normaliza(String s) {
-        return s == null ? null : s.trim();
-    }
-
-    // ✅ COBRO DE PRODUCTO POR TARJETA (guarda detalle = nombre del producto)
-    @Transactional
-    public Map<String, Object> procesarCompraMultiple(CompraMultipleRequest req) {
-        // 1. Buscar la tarjeta
-        TarjetaRfid tarjeta = tarjetaRepo
-                .findByTarjetaUidAndEstado(normaliza(req.getTarjetaUid()), "ACTIVA")
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o inactiva"));
-
-        Estudiante est = tarjeta.getEstudiante();
-        if (est == null) {
-            throw new RuntimeException("La tarjeta no está asignada a ningún estudiante");
+        // 3. Validar productos
+        List<Long> ids = req.getProductosIds();
+        if (ids == null || ids.isEmpty()) {
+            throw new RuntimeException("El carrito está vacío");
         }
-
-        // 2. Obtener todos los productos y el total
-        List<Long> ids = req.getProductoIds();
-        if (ids == null || ids.isEmpty())
-            throw new RuntimeException("No se seleccionaron productos");
 
         List<Producto> productos = productoRepo.findAllById(ids);
-        if (productos.size() != ids.size())
-            throw new RuntimeException("Uno o más productos no existen");
-
-        double total = productos.stream()
-                .mapToDouble(p -> p.getPrecio().doubleValue())
-                .sum();
-
-        // 3. Validar saldo suficiente
-        if (est.getSaldo() < total)
-            throw new RuntimeException("Saldo insuficiente");
-
-        // 4. Descontar saldo
-        double saldoNuevo = est.getSaldo() - total;
-        est.setSaldo(saldoNuevo);
-        estudianteRepo.save(est);
-
-        // 5. Registrar una transacción por cada producto
-        List<Map<String, Object>> compras = new ArrayList<>();
-        for (Producto p : productos) {
-            double precio = p.getPrecio().doubleValue();
-            // Puedes agrupar todas en una sola transacción si prefieres (ver nota abajo)
-            transaccionRepo.save(
-                    Transaccion.builder()
-                            .estudiante(est)
-                            .tipo("COMPRA_PRODUCTO")
-                            .monto(precio)
-                            .detalle(p.getNombre())
-                            .fecha(LocalDateTime.now())
-                            .build());
-            compras.add(Map.of(
-                    "producto", p.getNombre(),
-                    "precio", precio));
+        if (productos.size() != ids.size()) {
+            throw new RuntimeException("Uno o más productos no existen en la base de datos");
         }
 
-        // 6. Respuesta
+        // 4. Calcular Total (Usando BigDecimal)
+        BigDecimal total = productos.stream()
+                .map(Producto::getPrecio)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 5. Validar Saldo
+        if (usuario.getSaldo().compareTo(total) < 0) {
+            throw new RuntimeException("Saldo insuficiente. Saldo actual: $" + usuario.getSaldo());
+        }
+
+        // 6. Cobrar (Resta exacta)
+        usuario.setSaldo(usuario.getSaldo().subtract(total));
+        usuarioRepo.save(usuario);
+
+        // 7. Registrar Transacciones (Una por producto para detalle)
+        // Opcional: Podrías hacer una sola transacción global si prefieres
+        List<String> nombresProductos = new ArrayList<>();
+        
+        for (Producto p : productos) {
+            Transaccion t = new Transaccion();
+            t.setUsuario(usuario); // Asegúrate que Transaccion tenga setUsuario
+            t.setTipo("COMPRA_BAR");
+            t.setMonto(p.getPrecio().negate()); // Negativo porque es gasto
+            t.setDetalle(p.getNombre());
+            t.setFecha(LocalDateTime.now());
+            transaccionRepo.save(t);
+            
+            nombresProductos.add(p.getNombre());
+        }
+
+        // 8. Retornar resumen
         return Map.of(
-                "success", true,
-                "nuevoSaldo", saldoNuevo,
-                "compras", compras,
-                "total", total);
+            "status", "success",
+            "nuevoSaldo", usuario.getSaldo(),
+            "totalCobrado", total,
+            "productos", nombresProductos
+        );
     }
 }

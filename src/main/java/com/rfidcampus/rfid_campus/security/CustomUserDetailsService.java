@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return User.builder()
                 .username(usuario.getEmail())
                 .password(usuario.getPasswordHash()) // El hash BCrypt de la BD
-                .authorities(usuario.getRolNombre()) 
+                .authorities(usuario.getRolNombre()) // Ej: "ROLE_ADMIN"
                 .accountLocked(!usuario.getActivo())
                 .build();
     }

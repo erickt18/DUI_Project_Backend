@@ -14,5 +14,4 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // Por ahora, buscaremos el UID en la tabla de tarjetas, así que este método puede esperar.
     
     boolean existsByEmail(String email);
-    
 }

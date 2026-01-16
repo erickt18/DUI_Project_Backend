@@ -1,8 +1,22 @@
 package com.rfidcampus.rfid_campus.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column; // ✅ Importante para el dinero
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "transacciones")
@@ -14,23 +28,29 @@ public class Transaccion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Quién hizo la transacción
+    // ✅ CORRECCIÓN 1: Relación con Usuario (ya no Estudiante)
     @ManyToOne
-    @JoinColumn(name = "id_estudiante_fk", referencedColumnName = "id_estudiante", nullable = false)
-    private Estudiante estudiante;
+    @JoinColumn(name = "id_usuario_fk", nullable = false)
+    private Usuario usuario;
 
-    // RECARGA | COMPRA_PRODUCTO | COMPRA_BAR | ...
     @Column(nullable = false, length = 40)
-    private String tipo;
+    private String tipo; // Ej: "COMPRA_BAR", "RECARGA", "MULTA"
 
-    // Monto (positivo para recarga, negativo si así lo decides para compras — por ahora positivo)
-    @Column(nullable = false)
-    private Double monto;
+    // ✅ CORRECCIÓN 2: Uso de BigDecimal para precisión monetaria
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal monto;
 
-    // 👇 Nuevo: nombre del producto o descripción libre
     @Column(length = 180)
-    private String detalle;
+    private String detalle; // Ej: "Coca Cola + Sanduche"
 
     @Column(nullable = false)
-    private LocalDateTime fecha = LocalDateTime.now();
+    private LocalDateTime fecha;
+
+    // Asegura que siempre haya fecha al guardar
+    @PrePersist
+    protected void onCreate() {
+        if (fecha == null) {
+            fecha = LocalDateTime.now();
+        }
+    }
 }
