@@ -2,11 +2,11 @@ package com.rfidcampus.rfid_campus.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.math.BigDecimal; // IMPORTANTE: Usar BigDecimal
+import java.math.BigDecimal; 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "usuarios") // Coincide con tu nueva tabla
+@Table(name = "usuarios")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class Usuario {
@@ -30,6 +30,10 @@ public class Usuario {
     
     @Column(name = "fecha_nacimiento")
     private LocalDateTime fechaNacimiento;
+
+    // ✅ CAMPO QUE FALTABA (Vital para que compile PasswordResetService)
+    @Column(name = "uid_tarjeta", unique = true, length = 100)
+    private String uidTarjeta;
 
     // ✅ DINERO EXACTO
     @Column(nullable = false, precision = 10, scale = 2)
