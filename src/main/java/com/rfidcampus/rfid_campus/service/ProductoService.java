@@ -1,72 +1,148 @@
 package com.rfidcampus.rfid_campus.service;
 
-import com.rfidcampus.rfid_campus.dto.ProductoRequest;
-import com.rfidcampus.rfid_campus.dto.ProductoResponse;
-import com.rfidcampus.rfid_campus.model.Producto;
-import com.rfidcampus.rfid_campus.repository.ProductoRepository;
-import lombok.RequiredArgsConstructor;
-
+import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import com.rfidcampus.rfid_campus.model.Producto;
+import com.rfidcampus.rfid_campus.repository.ProductoRepository;
 
 @Service
-@RequiredArgsConstructor
 public class ProductoService {
 
-    private final ProductoRepository repo;
+    private final ProductoRepository productoRepository;
 
-    private static ProductoResponse toDTO(Producto p){
-        return new ProductoResponse(
-                p.getId(), p.getNombre(), p.getDescripcion(),
-                p.getPrecio(), p.getStock(), p.getActivo()
-        );
+    public ProductoService(ProductoRepository productoRepository) {
+        this.productoRepository = productoRepository;
     }
 
-    private static void apply(ProductoRequest in, Producto p){
-        p.setNombre(in.nombre());
-        p.setDescripcion(in.descripcion());
-        p.setPrecio(in.precio());
-        p.setStock(in.stock());
-        p.setActivo(in.activo());
+    // Método principal que llama al controlador
+    public List<Producto> listarProductosOrdenados(String algoritmo) {
+        // Obtenemos la lista de la BD
+        List<Producto> productos = new ArrayList<>(productoRepository.findAll());
+
+        switch (algoritmo.toLowerCase()) {
+            case "intercambio":
+                ordenarPorIntercambio(productos);
+                break;
+            case "seleccion":
+                ordenarPorSeleccion(productos);
+                break;
+            case "insercion":
+                ordenarPorInsercion(productos);
+                break;
+            case "shell":
+                ordenarPorShell(productos);
+                break;
+            default:
+                // Por defecto Intercambio si no se especifica
+                ordenarPorIntercambio(productos);
+                break;
+        }
+        return productos;
     }
 
-    @Transactional
-    public ProductoResponse create(ProductoRequest in){
-        Producto p = new Producto();
-        apply(in, p);
-        return toDTO(repo.save(p));
+    // ============================================================
+    // 1. MÉTODO DE INTERCAMBIO (Burbuja mejorada o estándar)
+    // ============================================================
+    private void ordenarPorIntercambio(List<Producto> lista) {
+        int n = lista.size();
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (lista.get(j).getPrecio().compareTo(lista.get(j + 1).getPrecio()) > 0) {
+                    swap(lista, j, j + 1);
+                }
+            }
+        }
     }
 
-    @Transactional
-    public ProductoResponse update(Long id, ProductoRequest in){
-        Producto p = repo.findById(id).orElseThrow();
-        apply(in, p);
-        return toDTO(p);
+    // ============================================================
+    // 2. MÉTODO DE SELECCIÓN
+    // ============================================================
+    private void ordenarPorSeleccion(List<Producto> lista) {
+        int n = lista.size();
+        for (int i = 0; i < n - 1; i++) {
+            int indiceMinimo = i;
+            for (int j = i + 1; j < n; j++) {
+                if (lista.get(j).getPrecio().compareTo(lista.get(indiceMinimo).getPrecio()) < 0) {
+                    indiceMinimo = j;
+                }
+            }
+            swap(lista, i, indiceMinimo);
+        }
     }
 
-    @Transactional
-    public void delete(Long id){
-        repo.deleteById(id);
+    // ============================================================
+    // 3. MÉTODO DE INSERCIÓN
+    // ============================================================
+    private void ordenarPorInsercion(List<Producto> lista) {
+        int n = lista.size();
+        for (int i = 1; i < n; i++) {
+            Producto key = lista.get(i);
+            int j = i - 1;
+
+            while (j >= 0 && lista.get(j).getPrecio().compareTo(key.getPrecio()) > 0) {
+                lista.set(j + 1, lista.get(j));
+                j = j - 1;
+            }
+            lista.set(j + 1, key);
+        }
     }
 
-    @Transactional(readOnly = true)
-    public ProductoResponse get(Long id){
-        return repo.findById(id).map(ProductoService::toDTO).orElseThrow();
+    // ============================================================
+    // 4. MÉTODO SHELL
+    // ============================================================
+    private void ordenarPorShell(List<Producto> lista) {
+        int n = lista.size();
+        for (int gap = n / 2; gap > 0; gap /= 2) {
+            for (int i = gap; i < n; i += 1) {
+                Producto temp = lista.get(i);
+                int j;
+                for (j = i; j >= gap && lista.get(j - gap).getPrecio().compareTo(temp.getPrecio()) > 0; j -= gap) {
+                    lista.set(j, lista.get(j - gap));
+                }
+                lista.set(j, temp);
+            }
+        }
     }
 
-    @Transactional(readOnly = true)
-    public Page<ProductoResponse> list(String q, Boolean activo, int page, int size){
-        Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
-        return repo.search((q==null||q.isBlank())? null : q.trim(), activo, pageable)
-                   .map(ProductoService::toDTO);
+    // ============================================================
+    // ✅ BÚSQUEDA BINARIA (Requiere lista ordenada)
+    // ============================================================
+    public Producto buscarPorPrecioBinario(double precioBuscado) {
+        // 1. Primero ordenamos (Shell es rápido)
+        List<Producto> lista = listarProductosOrdenados("shell");
+        
+        int izquierda = 0;
+        int derecha = lista.size() - 1;
+
+        while (izquierda <= derecha) {
+            int medio = izquierda + (derecha - izquierda) / 2;
+            double precioMedio = lista.get(medio).getPrecio().doubleValue();
+
+            if (precioMedio == precioBuscado) {
+                return lista.get(medio);
+            }
+
+            if (precioMedio < precioBuscado) {
+                izquierda = medio + 1;
+            } else {
+                derecha = medio - 1;
+            }
+        }
+        return null; // No encontrado
+    }
+
+    // Auxiliar para intercambiar elementos
+    private void swap(List<Producto> lista, int i, int j) {
+        Producto temp = lista.get(i);
+        lista.set(i, lista.get(j));
+        lista.set(j, temp);
     }
     
-    public List<Producto> findAll() {
-    return repo.findAll();
-}
-
-
+    // Métodos CRUD básicos
+    public List<Producto> listarTodos() { return productoRepository.findAll(); }
+    public Producto guardar(Producto p) { return productoRepository.save(p); }
+    public void eliminar(Long id) { productoRepository.deleteById(id); }
 }

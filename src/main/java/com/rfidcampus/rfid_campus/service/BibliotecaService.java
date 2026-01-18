@@ -10,15 +10,17 @@ import java.util.Queue;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.rfidcampus.rfid_campus.dto.LibroUpdateRequest;
 import com.rfidcampus.rfid_campus.dto.PrestamoDTO;
 import com.rfidcampus.rfid_campus.model.Libro;
 import com.rfidcampus.rfid_campus.model.RegistroBiblioteca;
 import com.rfidcampus.rfid_campus.model.TarjetaRfid;
-import com.rfidcampus.rfid_campus.model.Usuario; 
+import com.rfidcampus.rfid_campus.model.Usuario;
 import com.rfidcampus.rfid_campus.repository.LibroRepository;
 import com.rfidcampus.rfid_campus.repository.RegistroBibliotecaRepository;
 import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
+
 
 @Service
 public class BibliotecaService {
@@ -54,7 +56,7 @@ public class BibliotecaService {
         }
 
         // ✅ Usamos Usuario
-        Usuario usuario = tarjeta.getUsuario(); 
+        Usuario usuario = tarjeta.getUsuario();
         if (usuario == null) {
             throw new RuntimeException("Tarjeta no asignada a ningún usuario");
         }
@@ -72,9 +74,9 @@ public class BibliotecaService {
         libroRepo.save(libro);
 
         int dias = (diasPrestamo != null && diasPrestamo > 0) ? diasPrestamo : 7;
-        
+
         RegistroBiblioteca registro = RegistroBiblioteca.builder()
-                .usuario(usuario) 
+                .usuario(usuario)
                 .libro(libro)
                 .fechaPrestamo(LocalDateTime.now())
                 .fechaDevolucionEstimada(LocalDateTime.now().plusDays(dias))
@@ -126,7 +128,6 @@ public class BibliotecaService {
     }
 
     // ... (El resto de métodos de búsqueda se mantienen igual, solo cambia los Repositorios) ...
-    
     public List<PrestamoDTO> obtenerPrestamosPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -135,10 +136,48 @@ public class BibliotecaService {
 
         return registros.stream()
                 .map(r -> new PrestamoDTO(
-                        r.getFechaPrestamo().toLocalDate(),
-                        r.getLibro().getTitulo(),
-                        r.getEstado()
-                ))
+                r.getFechaPrestamo().toLocalDate(),
+                r.getLibro().getTitulo(),
+                r.getEstado()
+        ))
                 .toList();
+    }
+
+    public List<Libro> listarTodosLibros() {
+        return libroRepo.findAll();
+    }
+
+    public List<Libro> listarLibrosDisponibles() {
+        return libroRepo.findByDisponible(true);
+    }
+
+    public List<Libro> buscarPorTitulo(String titulo) {
+        return libroRepo.findByTituloContainingIgnoreCase(titulo);
+    }
+
+    public List<RegistroBiblioteca> listarTodosPrestamos() {
+        return registroRepo.findAll();
+    }
+
+    public Libro guardarLibro(Libro libro) {
+        return libroRepo.save(libro);
+    }
+
+    public void eliminarLibro(Long id) {
+        libroRepo.deleteById(id);
+    }
+
+    public Libro actualizarLibro(Long id, LibroUpdateRequest req) {
+        // ... (Puedes copiar la lógica de update que tenías o usar esta simple) ...
+        Libro libro = libroRepo.findById(id).orElseThrow();
+        // Actualiza campos básicos...
+        if (req.getTitulo() != null) {
+            libro.setTitulo(req.getTitulo());
+        }
+        if (req.getStock() != null) {
+            libro.setStock(req.getStock());
+            libro.setDisponible(req.getStock() > 0);
+        }
+        return libroRepo.save(libro);
     }
 }

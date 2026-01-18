@@ -1,8 +1,21 @@
 package com.rfidcampus.rfid_campus.model;
 
-import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "registro_biblioteca") // O "prestamos" si cambiaste el nombre en la BD
@@ -32,6 +45,7 @@ public class RegistroBiblioteca {
     @Column(name = "fecha_devolucion_real")
     private LocalDateTime fechaDevolucionReal;
 
+    @Builder.Default
     @Column(length = 20, nullable = false)
     private String estado = "PRESTADO"; // PRESTADO, DEVUELTO, CON_RETRASO
 

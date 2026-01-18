@@ -1,48 +1,60 @@
 package com.rfidcampus.rfid_campus.controller;
 
-import com.rfidcampus.rfid_campus.model.Transaccion;
-import com.rfidcampus.rfid_campus.repository.TransaccionRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
-
 import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.rfidcampus.rfid_campus.model.Transaccion;
+import com.rfidcampus.rfid_campus.service.TransaccionService;
 
 @RestController
 @RequestMapping("/api/transacciones")
-@RequiredArgsConstructor
 public class TransaccionController {
 
-    private final TransaccionRepository transaccionRepo;
+    private final TransaccionService transaccionService;
 
-    // ✅ Últimas 100 transacciones (solo admin)
-    @GetMapping("/ultimas")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<Transaccion> ultimas() {
-        return transaccionRepo.findTop100ByOrderByFechaDesc();
+    public TransaccionController(TransaccionService transaccionService) {
+        this.transaccionService = transaccionService;
     }
 
-    // ✅ Historial por estudiante
-    @PreAuthorize("hasAnyRole('ADMIN','STUDENT')")
-    @GetMapping("/estudiante/{id}")
-    public List<Transaccion> historial(@PathVariable Long id) {
-        return transaccionRepo.findByEstudianteIdOrderByFechaDesc(id);
+    // Endpoint para que el Admin vea todo
+    @GetMapping
+    public ResponseEntity<List<Transaccion>> listarTodas() {
+        return ResponseEntity.ok(transaccionService.obtenerUltimasTransacciones());
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
-    @GetMapping("/mis-compras")
-    public List<Transaccion> misCompras(org.springframework.security.core.Authentication auth) {
-        String email = auth.getName();
-        return transaccionRepo.findByEstudianteEmailAndTipoOrderByFechaDesc(email, "COMPRA");
+    // Endpoint para buscar por usuario (ID) - LISTA NORMAL
+    @GetMapping("/usuario/{id}")
+    public ResponseEntity<List<Transaccion>> listarPorUsuario(@PathVariable Long id) {
+        return ResponseEntity.ok(transaccionService.obtenerHistorialPorUsuario(id));
+    }
+    
+    // ✅ ESTRUCTURA DE DATOS: PILA (Stack)
+    // Agregamos este endpoint para demostrar el LIFO en tu exposición
+    @GetMapping("/usuario/{id}/pila")
+    public ResponseEntity<List<Transaccion>> verHistorialPila(@PathVariable Long id) {
+        return ResponseEntity.ok(transaccionService.obtenerHistorialPila(id));
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
-    @GetMapping("/mis-compras-bar")
-    public List<Transaccion> misComprasBar(Authentication auth) {
-        String email = auth.getName();
-        // SOLO DEL BAR:
-        return transaccionRepo.findByEstudianteEmailAndTipoOrderByFechaDesc(email, "COMPRA_BAR");
+    // Endpoint para buscar por usuario (Email) y Tipo (Ej: COMPRA_BAR)
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Transaccion>> buscarPorEmailYTipo(
+            @RequestParam String email, 
+            @RequestParam String tipo) {
+        return ResponseEntity.ok(transaccionService.buscarPorEmailYTipo(email, tipo));
     }
 
+    // Endpoint "Mis Transacciones" (Para el usuario logueado)
+    @GetMapping("/mis-movimientos")
+    public ResponseEntity<List<Transaccion>> verMisMovimientos(Authentication authentication) {
+        String email = authentication.getName();
+        // Usamos la búsqueda filtrada por defecto
+        return ResponseEntity.ok(transaccionService.buscarPorEmailYTipo(email, "COMPRA_BAR"));
+    }
 }

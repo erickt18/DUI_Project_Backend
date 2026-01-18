@@ -1,65 +1,53 @@
 package com.rfidcampus.rfid_campus.controller;
 
-import com.rfidcampus.rfid_campus.dto.ProductoRequest;
-import com.rfidcampus.rfid_campus.dto.ProductoResponse;
-import com.rfidcampus.rfid_campus.model.Producto;
-import com.rfidcampus.rfid_campus.service.ProductoService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@CrossOrigin(origins = "*")
+import com.rfidcampus.rfid_campus.model.Producto;
+import com.rfidcampus.rfid_campus.service.ProductoService;
+
 @RestController
-@RequestMapping("/api/products")
-@RequiredArgsConstructor
+@RequestMapping("/api/productos")
 public class ProductoController {
 
-    private final ProductoService service;
+    private final ProductoService productoService;
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ProductoResponse create(@Valid @RequestBody ProductoRequest in) {
-        return service.create(in);
+    public ProductoController(ProductoService productoService) {
+        this.productoService = productoService;
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ProductoResponse update(@PathVariable Long id, @Valid @RequestBody ProductoRequest in) {
-        return service.update(id, in);
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @GetMapping("/{id}")
-    public ProductoResponse get(@PathVariable Long id) {
-        return service.get(id);
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    // Listar normal (sin orden manual)
     @GetMapping
-    public Page<ProductoResponse> list(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) Boolean activo,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return service.list(q, activo, page, size);
+    public ResponseEntity<List<Producto>> listarTodos() {
+        return ResponseEntity.ok(productoService.listarTodos());
     }
 
-    // ✅ NUEVO - PARA LISTAR PRODUCTOS EN COMPRAS
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @GetMapping("/all")
-    public List<Producto> listarProductos() {
-        return service.findAll();
+    // ✅ ENDPOINT PARA TUS ALGORITMOS
+    // Prueba en Postman: GET /api/productos/ordenar?metodo=shell
+    // Opciones: intercambio, seleccion, insercion, shell
+    @GetMapping("/ordenar")
+    public ResponseEntity<List<Producto>> listarOrdenados(@RequestParam(defaultValue = "intercambio") String metodo) {
+        return ResponseEntity.ok(productoService.listarProductosOrdenados(metodo));
     }
 
+    // ✅ ENDPOINT BÚSQUEDA BINARIA
+    @GetMapping("/buscar-precio")
+    public ResponseEntity<?> buscarPorPrecio(@RequestParam double precio) {
+        Producto p = productoService.buscarPorPrecioBinario(precio);
+        if (p != null) return ResponseEntity.ok(p);
+        return ResponseEntity.notFound().build();
+    }
+    
+    // Guardar (Para Admin)
+    @PostMapping
+    public ResponseEntity<Producto> guardar(@RequestBody Producto p) {
+        return ResponseEntity.ok(productoService.guardar(p));
+    }
 }

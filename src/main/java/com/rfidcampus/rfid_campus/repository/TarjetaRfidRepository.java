@@ -1,10 +1,11 @@
 package com.rfidcampus.rfid_campus.repository;
 
-import com.rfidcampus.rfid_campus.model.Estudiante;
-import com.rfidcampus.rfid_campus.model.TarjetaRfid;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository; // ✅ Antes importaba Estudiante
+
+import com.rfidcampus.rfid_campus.model.TarjetaRfid;
+import com.rfidcampus.rfid_campus.model.Usuario;
 
 public interface TarjetaRfidRepository extends JpaRepository<TarjetaRfid, String> {
 
@@ -12,5 +13,6 @@ public interface TarjetaRfidRepository extends JpaRepository<TarjetaRfid, String
 
     Optional<TarjetaRfid> findByTarjetaUidAndEstado(String tarjetaUid, String estado);
 
-    Optional<TarjetaRfid> findByEstudiante(Estudiante estudiante);
+    // ✅ CORREGIDO: findByUsuario (antes findByEstudiante)
+    Optional<TarjetaRfid> findByUsuario(Usuario usuario);
 }

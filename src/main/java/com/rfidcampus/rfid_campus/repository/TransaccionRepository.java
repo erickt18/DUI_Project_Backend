@@ -8,11 +8,11 @@ import com.rfidcampus.rfid_campus.model.Transaccion;
 
 public interface TransaccionRepository extends JpaRepository<Transaccion, Long> {
 
-    // ✅ CORREGIDO: findByUsuarioId (antes findByEstudianteId)
+    // ✅ Debe decir UsuarioId, no EstudianteId
     List<Transaccion> findByUsuarioIdOrderByFechaDesc(Long id);
 
     List<Transaccion> findTop100ByOrderByFechaDesc();
     
-    // ✅ CORREGIDO: findByUsuarioEmail (antes findByEstudianteEmail)
+    // ✅ Debe decir UsuarioEmail
     List<Transaccion> findByUsuarioEmailAndTipoOrderByFechaDesc(String email, String tipo);
 }
