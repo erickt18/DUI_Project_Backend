@@ -173,4 +173,17 @@ public class TarjetaService {
             "productos", nombresProductos
         );
     }
+
+    @Transactional
+    public void bloquearTarjetaPorEmail(String email) {
+        Usuario usuario = usuarioRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        if (usuario.getUidTarjeta() == null) {
+            throw new RuntimeException("No tienes una tarjeta asignada");
+        }
+        
+        bloquearTarjeta(usuario.getUidTarjeta()); // Reutilizamos tu método existente
+    }
+    
 }

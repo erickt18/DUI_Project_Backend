@@ -1,24 +1,29 @@
 package com.rfidcampus.rfid_campus.controller;
 
-import java.math.BigDecimal; // Asegúrate de tener este DTO o usa Map
-import java.util.Map; // Asegúrate de tener este DTO
+import java.math.BigDecimal;
+import java.util.Map;
 
-import org.springframework.http.ResponseEntity; // Asegúrate de tener este DTO
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // ✅ Antes Estudiante
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping; // ✅ Antes EstudianteRepository
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMapping; // ✅ IMPORTANTE
+import org.springframework.web.bind.annotation.RequestParam;  // ✅ IMPORTANTE
 import org.springframework.web.bind.annotation.RestController;
 
+import com.rfidcampus.rfid_campus.dto.ForgotPasswordRequest;
 import com.rfidcampus.rfid_campus.dto.LoginRequest;
 import com.rfidcampus.rfid_campus.dto.RegisterRequest;
-import com.rfidcampus.rfid_campus.model.Rol;
+import com.rfidcampus.rfid_campus.dto.ResetPasswordRequest;
+import com.rfidcampus.rfid_campus.model.Rol; // ✅ IMPORTANTE
 import com.rfidcampus.rfid_campus.model.Usuario;
 import com.rfidcampus.rfid_campus.repository.RolRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 import com.rfidcampus.rfid_campus.security.JwtService;
+import com.rfidcampus.rfid_campus.service.PasswordResetService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,19 +32,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UsuarioRepository usuarioRepository; // ✅ Corregido
+    private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final PasswordResetService passwordResetService; // ✅ Inyectamos el servicio nuevo
 
+    // ================= REGISTRO =================
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             return ResponseEntity.badRequest().body(Map.of("error", "El email ya está registrado"));
         }
 
-        // Buscar Rol (Por defecto ESTUDIANTE si no se envía)
         String nombreRol = request.getRol() != null ? request.getRol() : "ROLE_ESTUDIANTE";
         Rol rol = rolRepository.findByNombre(nombreRol)
                 .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado."));
@@ -49,15 +55,15 @@ public class AuthController {
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .rol(rol)
-                .saldo(BigDecimal.ZERO) // ✅ BigDecimal
+                .saldo(BigDecimal.ZERO)
                 .activo(true)
                 .build();
 
         usuarioRepository.save(usuario);
-
         return ResponseEntity.ok(Map.of("message", "Usuario registrado exitosamente"));
     }
 
+    // ================= LOGIN =================
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         authenticationManager.authenticate(
@@ -67,10 +73,39 @@ public class AuthController {
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow();
 
-        // Generar Token
-        // Nota: Asegúrate que tu JwtService soporte generar token con los claims extras si los usas
         String jwtToken = jwtService.generateToken(usuario.getEmail(), Map.of("rol", usuario.getRolNombre()));
-
         return ResponseEntity.ok(Map.of("token", jwtToken));
     }
+
+    // ================= RECUPERAR CONTRASEÑA (GMAIL) ✅ =================
+    
+    // 1. Solicitar el correo (Envía el link)
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
+        try {
+            passwordResetService.requestReset(req);
+            return ResponseEntity.ok(Map.of("message", "Correo de recuperación enviado (si el usuario existe)."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // 2. Validar si el token del link sigue vivo
+    @GetMapping("/validate-token")
+    public ResponseEntity<?> validateToken(@RequestParam String token) {
+        boolean isValid = passwordResetService.validate(token);
+        return ResponseEntity.ok(Map.of("valid", isValid));
+    }
+
+    // 3. Cambiar la contraseña finalmente
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest req) {
+        try {
+            passwordResetService.reset(req);
+            return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente. Ya puedes iniciar sesión."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
+        

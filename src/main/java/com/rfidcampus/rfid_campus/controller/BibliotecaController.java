@@ -2,19 +2,21 @@ package com.rfidcampus.rfid_campus.controller;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping; // Importante
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.rfidcampus.rfid_campus.dto.LibroUpdateRequest;
 import com.rfidcampus.rfid_campus.model.Libro;
-import com.rfidcampus.rfid_campus.model.RegistroBiblioteca;
 import com.rfidcampus.rfid_campus.service.BibliotecaService;
 
 @RestController
@@ -27,31 +29,50 @@ public class BibliotecaController {
         this.bibliotecaService = bibliotecaService;
     }
 
-    // ================= LIBROS =================
+    // ================= CRUD LIBROS (COMPLETO) =================
+
+    // 1. LEER / BUSCAR (Puede filtrar por título o traer todos)
     @GetMapping("/libros")
-    public ResponseEntity<List<Libro>> listarLibros() {
-        // ✅ Ahora sí encontrará este método
+    public ResponseEntity<List<Libro>> listarLibros(@RequestParam(required = false) String busqueda) {
+        if (busqueda != null && !busqueda.isBlank()) {
+            return ResponseEntity.ok(bibliotecaService.buscarPorTitulo(busqueda));
+        }
         return ResponseEntity.ok(bibliotecaService.listarTodosLibros());
     }
 
+    // 2. CREAR (Agregar)
     @PostMapping("/libros")
     public ResponseEntity<Libro> crearLibro(@RequestBody Libro libro) {
         return ResponseEntity.ok(bibliotecaService.guardarLibro(libro));
     }
-    
-    // ================= PRÉSTAMOS =================
+
+    // 3. EDITAR (Actualizar) - ✅ LO QUE FALTABA
+    @PutMapping("/libros/{id}")
+    public ResponseEntity<?> actualizarLibro(@PathVariable Long id, @RequestBody LibroUpdateRequest req) {
+        try {
+            return ResponseEntity.ok(bibliotecaService.actualizarLibro(id, req));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // 4. ELIMINAR - ✅ LO QUE FALTABA
+    @DeleteMapping("/libros/{id}")
+    public ResponseEntity<?> eliminarLibro(@PathVariable Long id) {
+        try {
+            bibliotecaService.eliminarLibro(id);
+            return ResponseEntity.ok(Map.of("message", "Libro eliminado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No se puede eliminar (quizás tiene préstamos activos)"));
+        }
+    }
+
+    // ================= PRÉSTAMOS (Logica existente) =================
     @PostMapping("/prestamos")
-    public ResponseEntity<?> registrarPrestamo(
-            @RequestParam String uid, 
-            @RequestParam Long idLibro, 
-            @RequestParam(required = false) Integer dias) {
+    public ResponseEntity<?> registrarPrestamo(@RequestParam String uid, @RequestParam Long idLibro, @RequestParam(required = false) Integer dias) {
         try {
             var registro = bibliotecaService.registrarPrestamo(uid, idLibro, dias);
-            return ResponseEntity.ok(Map.of(
-                "mensaje", "Préstamo exitoso", 
-                "libro", registro.getLibro().getTitulo(),
-                "usuario", registro.getUsuario().getNombreCompleto() // ✅ CORREGIDO: getUsuario()
-            ));
+            return ResponseEntity.ok(Map.of("mensaje", "Préstamo exitoso", "libro", registro.getLibro().getTitulo()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -60,40 +81,23 @@ public class BibliotecaController {
     @PostMapping("/devoluciones/{id}")
     public ResponseEntity<?> registrarDevolucion(@PathVariable Long id) {
         try {
-            var registro = bibliotecaService.registrarDevolucion(id);
+            bibliotecaService.registrarDevolucion(id);
             return ResponseEntity.ok(Map.of("mensaje", "Libro devuelto correctamente"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-
-    // ================= HISTORIAL Y REPORTES =================
-    @GetMapping("/prestamos/activos") // Reporte de qué libros están fuera
-    public ResponseEntity<List<Map<String, Object>>> listarPrestamosActivos() {
-        List<RegistroBiblioteca> prestamos = bibliotecaService.listarTodosPrestamos();
-        
-        // Transformamos la lista para enviar un JSON limpio
-        List<Map<String, Object>> respuesta = prestamos.stream()
-            .map(r -> {
-                // ✅ CORREGIDO: getUsuario() en lugar de getEstudiante()
-                String nombreUsuario = r.getUsuario() != null ? r.getUsuario().getNombreCompleto() : "Desconocido";
-                return Map.<String, Object>of(
-                    "id", r.getId(),
-                    "libro", r.getLibro().getTitulo(),
-                    "usuario", nombreUsuario,
-                    "fechaPrestamo", r.getFechaPrestamo().toString(),
-                    "estado", r.getEstado()
-                );
-            })
-            .collect(Collectors.toList());
-
-        return ResponseEntity.ok(respuesta);
-    }
     
-    // Endpoint para la COLA DE ESPERA
+    // ================= ESTUDIANTE Y COLA =================
+    
+    @GetMapping("/mis-prestamos")
+    public ResponseEntity<?> verMisPrestamos(Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(bibliotecaService.obtenerPrestamosPorEmail(email));
+    }
+
     @PostMapping("/libros/{id}/espera")
     public ResponseEntity<?> unirseACola(@PathVariable Long id, @RequestParam String email) {
-        String mensaje = bibliotecaService.agregarAColaEspera(id, email);
-        return ResponseEntity.ok(Map.of("mensaje", mensaje));
+        return ResponseEntity.ok(Map.of("mensaje", bibliotecaService.agregarAColaEspera(id, email)));
     }
 }
