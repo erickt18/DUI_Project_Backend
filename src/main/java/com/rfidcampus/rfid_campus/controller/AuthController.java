@@ -10,15 +10,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping; // ✅ IMPORTANTE
-import org.springframework.web.bind.annotation.RequestParam;  // ✅ IMPORTANTE
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rfidcampus.rfid_campus.dto.ForgotPasswordRequest;
 import com.rfidcampus.rfid_campus.dto.LoginRequest;
 import com.rfidcampus.rfid_campus.dto.RegisterRequest;
 import com.rfidcampus.rfid_campus.dto.ResetPasswordRequest;
-import com.rfidcampus.rfid_campus.model.Rol; // ✅ IMPORTANTE
+import com.rfidcampus.rfid_campus.model.Rol;
 import com.rfidcampus.rfid_campus.model.Usuario;
 import com.rfidcampus.rfid_campus.repository.RolRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
@@ -37,7 +37,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final PasswordResetService passwordResetService; // ✅ Inyectamos el servicio nuevo
+    private final PasswordResetService passwordResetService;
 
     // ================= REGISTRO =================
     @PostMapping("/register")
@@ -77,20 +77,20 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("token", jwtToken));
     }
 
-    // ================= RECUPERAR CONTRASEÑA (GMAIL) ✅ =================
+    // ================= RECUPERAR CONTRASEÑA (GMAIL) =================
     
     // 1. Solicitar el correo (Envía el link)
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
         try {
             passwordResetService.requestReset(req);
-            return ResponseEntity.ok(Map.of("message", "Correo de recuperación enviado (si el usuario existe)."));
+            return ResponseEntity.ok(Map.of("message", "Correo de recuperación enviado."));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // 2. Validar si el token del link sigue vivo
+    // 2. Validar token
     @GetMapping("/validate-token")
     public ResponseEntity<?> validateToken(@RequestParam String token) {
         boolean isValid = passwordResetService.validate(token);
@@ -102,10 +102,9 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest req) {
         try {
             passwordResetService.reset(req);
-            return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente. Ya puedes iniciar sesión."));
+            return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente."));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }
-        
