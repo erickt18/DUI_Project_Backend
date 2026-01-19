@@ -50,4 +50,5 @@ public class ProductoController {
     public ResponseEntity<Producto> guardar(@RequestBody Producto p) {
         return ResponseEntity.ok(productoService.guardar(p));
     }
+    
 }
