@@ -46,7 +46,7 @@ public class BibliotecaController {
         return ResponseEntity.ok(bibliotecaService.guardarLibro(libro));
     }
 
-    // 3. EDITAR (Actualizar) - ✅ LO QUE FALTABA
+    // 3. EDITAR (Actualizar)
     @PutMapping("/libros/{id}")
     public ResponseEntity<?> actualizarLibro(@PathVariable Long id, @RequestBody LibroUpdateRequest req) {
         try {
@@ -56,7 +56,7 @@ public class BibliotecaController {
         }
     }
 
-    // 4. ELIMINAR - ✅ LO QUE FALTABA
+    // 4. ELIMINAR - 
     @DeleteMapping("/libros/{id}")
     public ResponseEntity<?> eliminarLibro(@PathVariable Long id) {
         try {

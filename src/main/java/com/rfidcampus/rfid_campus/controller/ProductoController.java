@@ -29,15 +29,15 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.listarTodos());
     }
 
-    // ✅ ENDPOINT PARA TUS ALGORITMOS
-    // Prueba en Postman: GET /api/productos/ordenar?metodo=shell
+
+
     // Opciones: intercambio, seleccion, insercion, shell
     @GetMapping("/ordenar")
     public ResponseEntity<List<Producto>> listarOrdenados(@RequestParam(defaultValue = "intercambio") String metodo) {
         return ResponseEntity.ok(productoService.listarProductosOrdenados(metodo));
     }
 
-    // ✅ ENDPOINT BÚSQUEDA BINARIA
+    // ENDPOINT BÚSQUEDA BINARIA
     @GetMapping("/buscar-precio")
     public ResponseEntity<?> buscarPorPrecio(@RequestParam double precio) {
         Producto p = productoService.buscarPorPrecioBinario(precio);

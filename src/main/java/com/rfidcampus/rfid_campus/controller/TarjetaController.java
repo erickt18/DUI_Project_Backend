@@ -55,7 +55,7 @@ public class TarjetaController {
         }
     }
 
-    @PostMapping("/bloquear-mi-tarjeta") // ✅ MEJORADO
+    @PostMapping("/bloquear-mi-tarjeta") 
     public ResponseEntity<?> bloquearMiTarjeta(Authentication authentication) {
         try {
             tarjetaService.bloquearTarjetaPorEmail(authentication.getName());
@@ -65,7 +65,7 @@ public class TarjetaController {
         }
     }
 
-    // 3. BAR: RECARGAR SALDO ✅
+    // 3. BAR: RECARGAR SALDO 
     @PostMapping("/recargar")
     public ResponseEntity<?> recargarSaldo(@RequestParam String uid, @RequestParam Double monto) {
         try {
@@ -80,7 +80,7 @@ public class TarjetaController {
         }
     }
 
-    // 4. BAR: COBRAR CON RFID ✅
+    // 4. BAR: COBRAR CON RFID 
     @PostMapping("/compra")
     public ResponseEntity<?> procesarCompra(@RequestBody CompraRequest request) {
         try {

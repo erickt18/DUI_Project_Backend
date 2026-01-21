@@ -35,7 +35,7 @@ public class TransaccionController {
         return ResponseEntity.ok(transaccionService.obtenerHistorialPorUsuario(id));
     }
     
-    // ✅ ESTRUCTURA DE DATOS: PILA (Stack)
+    // ESTRUCTURA DE DATOS: PILA (Stack)
     // Agregamos este endpoint para demostrar el LIFO en tu exposición
     @GetMapping("/usuario/{id}/pila")
     public ResponseEntity<List<Transaccion>> verHistorialPila(@PathVariable Long id) {

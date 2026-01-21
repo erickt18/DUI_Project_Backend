@@ -18,12 +18,11 @@ public class TransaccionService {
         this.transaccionRepo = transaccionRepo;
     }
 
-    // ✅ MÉTODO QUE FALTABA (Necesario para el endpoint normal del controlador)
     public List<Transaccion> obtenerHistorialPorUsuario(Long idUsuario) {
         return transaccionRepo.findByUsuarioIdOrderByFechaDesc(idUsuario);
     }
 
-    // ✅ IMPLEMENTACIÓN DE PILA (STACK) - LIFO
+    //  IMPLEMENTACIÓN DE PILA (STACK) - LIFO
     // Obtiene las transacciones y las devuelve en orden inverso usando una Pila manual
     public List<Transaccion> obtenerHistorialPila(Long idUsuario) {
         // 1. Obtenemos datos crudos de la BD
