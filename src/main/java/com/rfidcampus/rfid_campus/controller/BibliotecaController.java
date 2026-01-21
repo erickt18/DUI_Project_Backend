@@ -29,6 +29,7 @@ public class BibliotecaController {
         this.bibliotecaService = bibliotecaService;
     }
 
+    // Chimbo
     // ================= CRUD LIBROS (COMPLETO) =================
 
     // 1. LEER / BUSCAR (Puede filtrar por título o traer todos)
