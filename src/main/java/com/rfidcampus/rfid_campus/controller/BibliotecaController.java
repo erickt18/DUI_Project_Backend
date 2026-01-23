@@ -6,7 +6,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping; // Importante
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,12 +31,23 @@ public class BibliotecaController {
 
     // ================= CRUD LIBROS (COMPLETO) =================
 
-    // 1. LEER / BUSCAR (Puede filtrar por título o traer todos)
+    // 1. LEER / BUSCAR (MODIFICADO) ✅
     @GetMapping("/libros")
-    public ResponseEntity<List<Libro>> listarLibros(@RequestParam(required = false) String busqueda) {
+    public ResponseEntity<List<Libro>> listarLibros(
+            @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) String tipo // <--- ESTO FALTABA
+    ) {
+        // 1. Si piden tipo (TESIS, ARTICULO...), filtramos
+        if (tipo != null && !tipo.isBlank()) {
+            return ResponseEntity.ok(bibliotecaService.buscarPorTipo(tipo));
+        }
+
+        // 2. Si piden búsqueda por título
         if (busqueda != null && !busqueda.isBlank()) {
             return ResponseEntity.ok(bibliotecaService.buscarPorTitulo(busqueda));
         }
+
+        // 3. Si no piden nada, devolvemos todo
         return ResponseEntity.ok(bibliotecaService.listarTodosLibros());
     }
 
@@ -56,7 +67,7 @@ public class BibliotecaController {
         }
     }
 
-    // 4. ELIMINAR - 
+    // 4. ELIMINAR 
     @DeleteMapping("/libros/{id}")
     public ResponseEntity<?> eliminarLibro(@PathVariable Long id) {
         try {

@@ -4,13 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map; // ✅ Usamos Usuario
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rfidcampus.rfid_campus.dto.CompraRequest;
-import com.rfidcampus.rfid_campus.model.Producto; // ✅ Usamos UsuarioRepository
+import com.rfidcampus.rfid_campus.model.Producto;
 import com.rfidcampus.rfid_campus.model.TarjetaRfid;
 import com.rfidcampus.rfid_campus.model.Transaccion;
 import com.rfidcampus.rfid_campus.model.Usuario;
@@ -28,16 +28,12 @@ public class TarjetaService {
     private final ProductoRepository productoRepo;
 
     public TarjetaService(TarjetaRfidRepository tarjetaRepo, UsuarioRepository usuarioRepo,
-                          TransaccionRepository transaccionRepo, ProductoRepository productoRepo) {
+            TransaccionRepository transaccionRepo, ProductoRepository productoRepo) {
         this.tarjetaRepo = tarjetaRepo;
         this.usuarioRepo = usuarioRepo;
         this.transaccionRepo = transaccionRepo;
         this.productoRepo = productoRepo;
     }
-
-    // ==========================================
-    // 1. GESTIÓN BÁSICA (Listar, Asignar, Bloquear)
-    // ==========================================
 
     public List<TarjetaRfid> listar() {
         return tarjetaRepo.findAll();
@@ -45,20 +41,22 @@ public class TarjetaService {
 
     @Transactional
     public void asignarTarjeta(String uid, Long usuarioId) {
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(uid)
+        // ✅ CORREGIDO: Usamos findById
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada en el sistema"));
 
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Validar si la tarjeta ya es de otro
         if (tarjeta.getUsuario() != null && !tarjeta.getUsuario().getId().equals(usuarioId)) {
             throw new RuntimeException("Esta tarjeta ya pertenece a otro usuario");
         }
 
-        // Asignación bidireccional
+        // ✅ CORREGIDO: Asignación de Objetos (No Strings)
         tarjeta.setUsuario(usuario);
-        usuario.setUidTarjeta(uid);
+        // Si tu Usuario tiene el campo 'tarjeta', descomenta la siguiente línea:
+        // usuario.setTarjeta(tarjeta); 
+        // usuario.setUidTarjeta(uid); <--- ESTO DABA ERROR si no tienes ese campo String
 
         usuarioRepo.save(usuario);
         tarjetaRepo.save(tarjeta);
@@ -66,7 +64,7 @@ public class TarjetaService {
 
     @Transactional
     public void bloquearTarjeta(String uid) {
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(uid)
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid) // ✅ findById
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
         tarjeta.setEstado("BLOQUEADA");
         tarjetaRepo.save(tarjeta);
@@ -74,20 +72,15 @@ public class TarjetaService {
 
     @Transactional
     public void desbloquearTarjeta(String uid) {
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(uid)
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid) // ✅ findById
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
         tarjeta.setEstado("ACTIVA");
         tarjetaRepo.save(tarjeta);
     }
 
-    // ==========================================
-    // 2. LÓGICA FINANCIERA (Recargas y Compras)
-    // ==========================================
-
     @Transactional
     public Usuario recargarSaldo(String uid, Double montoDouble) {
-        // Buscamos tarjeta activa
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(uid)
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid) // ✅ findById
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
 
         if ("BLOQUEADA".equalsIgnoreCase(tarjeta.getEstado())) {
@@ -95,23 +88,22 @@ public class TarjetaService {
         }
 
         Usuario usuario = tarjeta.getUsuario();
-        if (usuario == null) throw new RuntimeException("Tarjeta sin usuario asignado");
+        if (usuario == null) {
+            throw new RuntimeException("Tarjeta sin usuario asignado");
+        }
 
-        // Conversión segura a BigDecimal
         BigDecimal monto = BigDecimal.valueOf(montoDouble);
         if (monto.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("El monto debe ser positivo");
         }
 
-        // Sumar saldo
         usuario.setSaldo(usuario.getSaldo().add(monto));
         usuarioRepo.save(usuario);
 
-        // Registrar transacción
         transaccionRepo.save(Transaccion.builder()
                 .usuario(usuario)
                 .tipo("RECARGA")
-                .monto(monto) // Positivo
+                .monto(monto)
                 .detalle("Recarga de saldo")
                 .fecha(LocalDateTime.now())
                 .build());
@@ -119,11 +111,9 @@ public class TarjetaService {
         return usuario;
     }
 
-    // ✅ MÉTODO DE COMPRA (El que arreglamos antes)
     @Transactional
     public Map<String, Object> procesarCompraMultiple(CompraRequest req) {
-        
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(req.getTarjetaUid())
+        TarjetaRfid tarjeta = tarjetaRepo.findById(req.getTarjetaUid()) // ✅ findById
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
 
         if (!"ACTIVA".equalsIgnoreCase(tarjeta.getEstado())) {
@@ -131,35 +121,34 @@ public class TarjetaService {
         }
 
         Usuario usuario = tarjeta.getUsuario();
-        if (usuario == null) throw new RuntimeException("Tarjeta sin usuario asignado");
+        if (usuario == null) {
+            throw new RuntimeException("Tarjeta sin usuario asignado");
+        }
 
         List<Long> ids = req.getProductosIds();
-        if (ids == null || ids.isEmpty()) throw new RuntimeException("El carrito está vacío");
+        if (ids == null || ids.isEmpty()) {
+            throw new RuntimeException("El carrito está vacío");
+        }
 
         List<Producto> productos = productoRepo.findAllById(ids);
-        if (productos.size() != ids.size()) throw new RuntimeException("Productos no válidos");
 
-        // Calcular Total
         BigDecimal total = productos.stream()
                 .map(Producto::getPrecio)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Validar Saldo
         if (usuario.getSaldo().compareTo(total) < 0) {
             throw new RuntimeException("Saldo insuficiente. Tienes: $" + usuario.getSaldo());
         }
 
-        // Cobrar
         usuario.setSaldo(usuario.getSaldo().subtract(total));
         usuarioRepo.save(usuario);
 
-        // Registrar Transacciones
         List<String> nombresProductos = new ArrayList<>();
         for (Producto p : productos) {
             Transaccion t = new Transaccion();
             t.setUsuario(usuario);
             t.setTipo("COMPRA_BAR");
-            t.setMonto(p.getPrecio().negate()); // Negativo para indicar gasto en reportes
+            t.setMonto(p.getPrecio().negate());
             t.setDetalle(p.getNombre());
             t.setFecha(LocalDateTime.now());
             transaccionRepo.save(t);
@@ -167,23 +156,25 @@ public class TarjetaService {
         }
 
         return Map.of(
-            "status", "success",
-            "nuevoSaldo", usuario.getSaldo(),
-            "totalCobrado", total,
-            "productos", nombresProductos
+                "status", "success",
+                "nuevoSaldo", usuario.getSaldo(),
+                "totalCobrado", total,
+                "productos", nombresProductos
         );
     }
 
     @Transactional
     public void bloquearTarjetaPorEmail(String email) {
+        // 1. Buscamos al usuario por su email (del token)
         Usuario usuario = usuarioRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
-        if (usuario.getUidTarjeta() == null) {
-            throw new RuntimeException("No tienes una tarjeta asignada");
-        }
-        
-        bloquearTarjeta(usuario.getUidTarjeta()); // Reutilizamos tu método existente
+
+        // 2. Buscamos la tarjeta asociada a ese usuario (Usando el método nuevo del Repo)
+        TarjetaRfid tarjeta = tarjetaRepo.findByUsuario(usuario)
+                .orElseThrow(() -> new RuntimeException("No tienes una tarjeta asignada para bloquear."));
+
+        // 3. Bloqueamos
+        tarjeta.setEstado("BLOQUEADA");
+        tarjetaRepo.save(tarjeta);
     }
-    
 }

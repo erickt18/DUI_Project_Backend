@@ -133,16 +133,34 @@ public class ProductoService {
         }
         return null; // No encontrado
     }
-
-    // Auxiliar para intercambiar elementos
+// Auxiliar para intercambiar elementos
     private void swap(List<Producto> lista, int i, int j) {
         Producto temp = lista.get(i);
         lista.set(i, lista.get(j));
         lista.set(j, temp);
     }
     
-    // Métodos CRUD básicos
-    public List<Producto> listarTodos() { return productoRepository.findAll(); }
-    public Producto guardar(Producto p) { return productoRepository.save(p); }
-    public void eliminar(Long id) { productoRepository.deleteById(id); }
+    // ==========================================
+    // MÉTODOS CRUD BÁSICOS (Corregido)
+    // ==========================================
+
+    public List<Producto> listarTodos() { 
+        return productoRepository.findAll(); 
+    }
+
+    public Producto guardar(Producto p) { 
+        return productoRepository.save(p); 
+    }
+
+    // ✅ ESTE ES EL ÚNICO QUE DEBES TENER
+    public void eliminar(Long id) { 
+        productoRepository.deleteById(id); 
+    }
+
+    public Producto buscarPorId(Long id) {
+        return productoRepository.findById(id).orElse(null);
+    }
+    
+
+    
 }

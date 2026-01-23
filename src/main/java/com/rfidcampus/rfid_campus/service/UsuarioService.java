@@ -3,7 +3,7 @@ package com.rfidcampus.rfid_campus.service;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Service; // Necesitarás este repo
+import org.springframework.stereotype.Service;
 
 import com.rfidcampus.rfid_campus.model.Usuario;
 import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository;
@@ -32,10 +32,10 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
-    // Búsqueda por UID de tarjeta (Crucial para el hardware)
+    // ✅ CORREGIDO: Usamos findById porque el UID es la llave primaria
     public Optional<Usuario> buscarPorUid(String uid) {
-        return tarjetaRepository.findByTarjetaUid(uid)
-                .map(tarjeta -> tarjeta.getUsuario()); // Asumiendo que agregaste la relación en TarjetaRfid
+        return tarjetaRepository.findById(uid)
+                .map(tarjeta -> tarjeta.getUsuario()); 
     }
     
     public Usuario guardar(Usuario usuario) {

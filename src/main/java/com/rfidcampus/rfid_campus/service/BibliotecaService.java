@@ -21,41 +21,33 @@ import com.rfidcampus.rfid_campus.repository.RegistroBibliotecaRepository;
 import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 
-
 @Service
 public class BibliotecaService {
 
     private final LibroRepository libroRepo;
     private final RegistroBibliotecaRepository registroRepo;
     private final TarjetaRfidRepository tarjetaRepo;
-    private final UsuarioRepository usuarioRepository; // ✅ Cambio de nombre
+    private final UsuarioRepository usuarioRepository;
 
-    // ✅ ESTRUCTURA DE DATOS: COLA (Queue) para Lista de Espera
     private Map<Long, Queue<String>> colaEsperaLibros = new HashMap<>();
 
-    public BibliotecaService(
-            LibroRepository libroRepo,
-            RegistroBibliotecaRepository registroRepo,
-            TarjetaRfidRepository tarjetaRepo,
-            UsuarioRepository usuarioRepository) { // ✅ Inyectamos el nuevo repo
+    public BibliotecaService(LibroRepository libroRepo, RegistroBibliotecaRepository registroRepo,
+                             TarjetaRfidRepository tarjetaRepo, UsuarioRepository usuarioRepository) {
         this.libroRepo = libroRepo;
         this.registroRepo = registroRepo;
         this.tarjetaRepo = tarjetaRepo;
         this.usuarioRepository = usuarioRepository;
     }
 
-    // ======================== PRÉSTAMO ========================
     @Transactional
     public RegistroBiblioteca registrarPrestamo(String uid, Long idLibro, Integer diasPrestamo) {
-
-        TarjetaRfid tarjeta = tarjetaRepo.findByTarjetaUid(uid)
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
 
         if ("BLOQUEADA".equalsIgnoreCase(tarjeta.getEstado())) {
             throw new RuntimeException("Tarjeta bloqueada.");
         }
 
-        // ✅ Usamos Usuario
         Usuario usuario = tarjeta.getUsuario();
         if (usuario == null) {
             throw new RuntimeException("Tarjeta no asignada a ningún usuario");
@@ -65,7 +57,6 @@ public class BibliotecaService {
                 .orElseThrow(() -> new RuntimeException("Libro no encontrado"));
 
         if (libro.getStock() <= 0) {
-            // Lógica de Cola: Si no hay stock, sugerir entrar a lista de espera
             throw new RuntimeException("No hay ejemplares. Use la función 'entrar en lista de espera'.");
         }
 
@@ -86,7 +77,6 @@ public class BibliotecaService {
         return registroRepo.save(registro);
     }
 
-    // ======================== DEVOLUCIÓN ========================
     @Transactional
     public RegistroBiblioteca registrarDevolucion(Long idPrestamo) {
         RegistroBiblioteca registro = registroRepo.findById(idPrestamo)
@@ -105,13 +95,11 @@ public class BibliotecaService {
         libro.setDisponible(true);
         libroRepo.save(libro);
 
-        // ✅ Verificar Cola de Espera
         notificarSiguienteEnCola(libro.getId());
 
         return registro;
     }
 
-    // Métodos de COLA
     public String agregarAColaEspera(Long idLibro, String emailUsuario) {
         colaEsperaLibros.putIfAbsent(idLibro, new LinkedList<>());
         colaEsperaLibros.get(idLibro).offer(emailUsuario);
@@ -123,16 +111,14 @@ public class BibliotecaService {
         if (cola != null && !cola.isEmpty()) {
             String email = cola.poll();
             System.out.println(">>> NOTIFICACIÓN: El libro ID " + idLibro + " está disponible para " + email);
-            // Aquí podrías enviar un email real
         }
     }
 
-    // ... (El resto de métodos de búsqueda se mantienen igual, solo cambia los Repositorios) ...
     public List<PrestamoDTO> obtenerPrestamosPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        var registros = registroRepo.findByUsuario(usuario); // ✅ findByUsuario
+        
+        var registros = registroRepo.findByUsuario(usuario);
 
         return registros.stream()
                 .map(r -> new PrestamoDTO(
@@ -148,11 +134,16 @@ public class BibliotecaService {
     }
 
     public List<Libro> listarLibrosDisponibles() {
-        return libroRepo.findByDisponible(true);
+        return libroRepo.findByDisponible(true);// AQUI ME DA ERROR 
     }
 
     public List<Libro> buscarPorTitulo(String titulo) {
         return libroRepo.findByTituloContainingIgnoreCase(titulo);
+    }
+
+    // ✅ AQUÍ ESTÁ LA CORRECCIÓN: EL MÉTODO QUE FALTABA
+    public List<Libro> buscarPorTipo(String tipo) {
+        return libroRepo.findByTipoMaterialIgnoreCase(tipo);
     }
 
     public List<RegistroBiblioteca> listarTodosPrestamos() {
@@ -168,9 +159,7 @@ public class BibliotecaService {
     }
 
     public Libro actualizarLibro(Long id, LibroUpdateRequest req) {
-        // ... (Puedes copiar la lógica de update que tenías o usar esta simple) ...
         Libro libro = libroRepo.findById(id).orElseThrow();
-        // Actualiza campos básicos...
         if (req.getTitulo() != null) {
             libro.setTitulo(req.getTitulo());
         }

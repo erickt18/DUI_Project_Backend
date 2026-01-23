@@ -1,14 +1,20 @@
 package com.rfidcampus.rfid_campus.repository;
 
-import com.rfidcampus.rfid_campus.model.Libro;
-import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
-public interface LibroRepository extends JpaRepository<Libro, Long> {
-    List<Libro> findByDisponible(Boolean disponible);
-    List<Libro> findByTituloContainingIgnoreCase(String titulo);
-    List<Libro> findByAutorContainingIgnoreCase(String autor);
-    List<Libro> findByCategoria(String categoria);
-    boolean existsByIsbn(String isbn);
+import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.rfidcampus.rfid_campus.model.Libro;
+
+public interface LibroRepository extends JpaRepository<Libro, Long> {
+    
+    // 1. Para el buscador general (Por título)
+    List<Libro> findByTituloContainingIgnoreCase(String titulo);
+
+    // 2. Para filtrar Tesis vs Libros
+    List<Libro> findByTipoMaterialIgnoreCase(String tipoMaterial);
+
+    // 3. 🚨 ¡ESTA ES LA QUE TE FALTA! AGREGALA:
+    // Sirve para encontrar solo los libros que tienen stock (disponible = true)
+    List<Libro> findByDisponible(Boolean disponible);
 }
