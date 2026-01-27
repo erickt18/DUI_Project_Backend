@@ -14,7 +14,7 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     // 2. Para filtrar Tesis vs Libros
     List<Libro> findByTipoMaterialIgnoreCase(String tipoMaterial);
 
-    // 3. 🚨 ¡ESTA ES LA QUE TE FALTA! AGREGALA:
+    
     // Sirve para encontrar solo los libros que tienen stock (disponible = true)
     List<Libro> findByDisponible(Boolean disponible);
 }

@@ -10,8 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class LibroUpdateRequest {
-    // Usamos objetos (String, Integer) en lugar de primitivos (int)
-    // para saber si vienen nulos (es decir, que NO se quieren actualizar)
+    
     
     private String titulo;
     private String isbn;

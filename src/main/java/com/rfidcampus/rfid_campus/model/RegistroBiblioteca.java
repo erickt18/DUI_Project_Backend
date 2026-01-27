@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "registro_biblioteca") // O "prestamos" si cambiaste el nombre en la BD
+@Table(name = "registro_biblioteca") 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class RegistroBiblioteca {
 
@@ -27,7 +27,7 @@ public class RegistroBiblioteca {
     @Column(name = "id_prestamo")
     private Long id;
 
-    // ✅ CORRECCIÓN CRÍTICA: Cambiado de Estudiante a Usuario
+    
     @ManyToOne
     @JoinColumn(name = "id_usuario_fk", nullable = false) 
     private Usuario usuario;
@@ -49,7 +49,7 @@ public class RegistroBiblioteca {
     @Column(length = 20, nullable = false)
     private String estado = "PRESTADO"; // PRESTADO, DEVUELTO, CON_RETRASO
 
-    // Asegura que la fecha de préstamo se asigne automáticamente al crear
+   
     @PrePersist
     protected void onCreate() {
         if (fechaPrestamo == null) {

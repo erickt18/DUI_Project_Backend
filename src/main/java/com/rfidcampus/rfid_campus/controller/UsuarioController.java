@@ -1,5 +1,6 @@
 package com.rfidcampus.rfid_campus.controller;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,5 +112,24 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<List<Usuario>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
+    }
+    // ESTADÍSTICAS DEL DASHBOARD
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
+        long totalUsuarios = usuarioRepository.count();
+        long totalEstudiantes = usuarioRepository.countEstudiantes();
+        BigDecimal dineroTotal = usuarioRepository.sumarSaldoTotal();
+        long tarjetasAsignadas = usuarioRepository.countUsuariosConTarjeta();
+
+        // Calcular porcentaje de tarjetas
+        double porcentaje = totalUsuarios > 0 ? ((double) tarjetasAsignadas / totalUsuarios) * 100 : 0;
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalEstudiantes", totalEstudiantes);
+        stats.put("dineroTotal", dineroTotal);
+        stats.put("tarjetasAsignadas", (int) porcentaje); // Lo enviamos como %
+        stats.put("totalUsuarios", totalUsuarios);
+
+        return ResponseEntity.ok(stats);
     }
 }

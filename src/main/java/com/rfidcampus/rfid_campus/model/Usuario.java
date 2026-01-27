@@ -40,7 +40,7 @@ public class Usuario {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    // Campos opcionales (Solo para estudiantes)
+    
     private String carrera;
     
     @Column(name = "fecha_nacimiento")
@@ -51,7 +51,7 @@ public class Usuario {
     @JoinColumn(name = "uid_tarjeta")
     private TarjetaRfid tarjeta;
 
-    // ✅ DINERO EXACTO
+   
     @Builder.Default
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal saldo = BigDecimal.ZERO;
@@ -72,7 +72,7 @@ public class Usuario {
         createdAt = LocalDateTime.now();
     }
 
-    // Helper para obtener el nombre del rol fácilmente
+   
     public String getRolNombre() {
         return rol != null ? rol.getNombre() : "ROLE_ESTUDIANTE";
     }
@@ -80,6 +80,6 @@ public class Usuario {
     // Helper para obtener el UID de la tarjeta fácilmente (para que no rompa otros códigos)
     public String getUidTarjeta() {
         return tarjeta != null ? tarjeta.getTarjetaUid() : null; 
-        // Asegúrate que en TarjetaRfid tengas el método getTarjetaUid() o getUid()
+        
     }
 }

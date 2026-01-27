@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ForgotPasswordRequest {
     private String email;
-    private String rfid; // ✅ Esto soluciona el error en req.getRfid()
+    private String rfid; 
 }

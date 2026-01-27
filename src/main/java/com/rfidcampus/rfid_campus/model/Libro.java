@@ -15,8 +15,8 @@ public class Libro {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_libro") // Importante para mapear a id_libro de la BD
-    private Long id; // Puedes llamarlo 'id' o 'idLibro', pero el @Column manda
+    @Column(name = "id_libro") 
+    private Long id; 
 
     private String titulo;
     private String autor;
@@ -24,17 +24,17 @@ public class Libro {
     private String editorial;
     private Integer anio;
     
-    @Column(name = "tipo_material") // Mapeo exacto snake_case
+    @Column(name = "tipo_material") 
     private String tipoMaterial;
     
     private String categoria;
     
-    private Integer stock; // Stock actual
+    private Integer stock; 
 
-    @Column(name = "stock_total") // ✅ AGREGADO (Faltaba este)
+    @Column(name = "stock_total") 
     private Integer stockTotal;
 
-    @Column(name = "stock_disponible") // ✅ AGREGADO (Faltaba este)
+    @Column(name = "stock_disponible") 
     private Integer stockDisponible;
     
     private String ubicacion;

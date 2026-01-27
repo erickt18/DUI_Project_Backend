@@ -28,7 +28,7 @@ public class Transaccion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ CORRECCIÓN 1: Relación con Usuario (ya no Estudiante)
+    
     @ManyToOne
     @JoinColumn(name = "id_usuario_fk", nullable = false)
     private Usuario usuario;
@@ -36,7 +36,7 @@ public class Transaccion {
     @Column(nullable = false, length = 40)
     private String tipo; // Ej: "COMPRA_BAR", "RECARGA", "MULTA"
 
-    // ✅ CORRECCIÓN 2: Uso de BigDecimal para precisión monetaria
+    
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
 
@@ -46,7 +46,7 @@ public class Transaccion {
     @Column(nullable = false)
     private LocalDateTime fecha;
 
-    // Asegura que siempre haya fecha al guardar
+  
     @PrePersist
     protected void onCreate() {
         if (fecha == null) {

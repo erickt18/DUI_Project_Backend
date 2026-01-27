@@ -6,5 +6,5 @@ import lombok.Data;
 public class PrestamoRequest {
     private String uidTarjeta;
     private Long idLibro;
-    private Integer diasPrestamo; // Por defecto 7 días
+    private Integer diasPrestamo; 
 }

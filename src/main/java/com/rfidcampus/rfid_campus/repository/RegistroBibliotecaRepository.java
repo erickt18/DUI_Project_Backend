@@ -12,7 +12,7 @@ public interface RegistroBibliotecaRepository extends JpaRepository<RegistroBibl
     // Buscar historial completo
     List<RegistroBiblioteca> findByUsuario(Usuario usuario);
     
-    // ✅ NUEVO: Buscar SOLO lo que debe (Pendientes)
+   
     // Busca por usuario Y donde el estado sea "PRESTADO"
     List<RegistroBiblioteca> findByUsuarioAndEstado(Usuario usuario, String estado);
 }

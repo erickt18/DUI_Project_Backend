@@ -11,5 +11,5 @@ public class EstudianteResponse {
     private String carrera;
     private String email;
     private String uidTarjeta;
-    private Double saldo; // si tu modelo lo maneja
+    private Double saldo; 
 }

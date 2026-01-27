@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResetPasswordRequest {
-    private String token;       // ✅ Esto soluciona req.getToken()
-    private String newPassword; // ✅ Esto soluciona req.getNewPassword()
+    private String token;      
+    private String newPassword; 
 }

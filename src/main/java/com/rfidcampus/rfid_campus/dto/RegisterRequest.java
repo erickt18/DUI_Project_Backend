@@ -13,5 +13,5 @@ public class RegisterRequest {
     private String nombre;
     private String email;
     private String password;
-    private String rol; // Ej: "ROLE_ADMIN_BAR"
+    private String rol; 
 }
