@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne; // <--- IMPORTANTE
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -45,9 +46,10 @@ public class Usuario {
     @Column(name = "fecha_nacimiento")
     private LocalDateTime fechaNacimiento;
 
-    // ✅ CAMPO QUE FALTABA (Vital para que compile PasswordResetService)
-    @Column(name = "uid_tarjeta", unique = true, length = 100)
-    private String uidTarjeta;
+    
+    @OneToOne 
+    @JoinColumn(name = "uid_tarjeta")
+    private TarjetaRfid tarjeta;
 
     // ✅ DINERO EXACTO
     @Builder.Default
@@ -73,5 +75,11 @@ public class Usuario {
     // Helper para obtener el nombre del rol fácilmente
     public String getRolNombre() {
         return rol != null ? rol.getNombre() : "ROLE_ESTUDIANTE";
+    }
+    
+    // Helper para obtener el UID de la tarjeta fácilmente (para que no rompa otros códigos)
+    public String getUidTarjeta() {
+        return tarjeta != null ? tarjeta.getTarjetaUid() : null; 
+        // Asegúrate que en TarjetaRfid tengas el método getTarjetaUid() o getUid()
     }
 }

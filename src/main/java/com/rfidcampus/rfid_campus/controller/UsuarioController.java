@@ -1,10 +1,13 @@
 package com.rfidcampus.rfid_campus.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin; 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -12,72 +15,90 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.rfidcampus.rfid_campus.model.TarjetaRfid; // <--- TU MODELO REAL
+import com.rfidcampus.rfid_campus.model.Rol;
+import com.rfidcampus.rfid_campus.model.TarjetaRfid;
 import com.rfidcampus.rfid_campus.model.Usuario;
-import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository; // <--- TU REPO REAL
+import com.rfidcampus.rfid_campus.repository.RolRepository;
+import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 import com.rfidcampus.rfid_campus.service.UsuarioService;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@CrossOrigin(origins = "*") 
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
-    private final TarjetaRfidRepository tarjetaRfidRepository; // <--- CAMBIO AQUÍ
+    private final TarjetaRfidRepository tarjetaRfidRepository;
+    private final RolRepository rolRepository;
 
     public UsuarioController(UsuarioService usuarioService, 
                              UsuarioRepository usuarioRepository, 
-                             TarjetaRfidRepository tarjetaRfidRepository) {
+                             TarjetaRfidRepository tarjetaRfidRepository,
+                             RolRepository rolRepository) {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.tarjetaRfidRepository = tarjetaRfidRepository;
+        this.rolRepository = rolRepository;
     }
 
-    // =======================================================
-    // 🆕 MÉTODO CORREGIDO PARA TU ENTIDAD TarjetaRfid
-    // =======================================================
     @PutMapping("/{id}/asignar-datos")
     public ResponseEntity<?> asignarTarjetaYRol(@PathVariable Long id, @RequestBody Map<String, String> datos) {
         
-        String nuevoRol = datos.get("rol");          
+        String nuevoRolNombre = datos.get("rol");      
         String uidRecibido = datos.get("tarjetaUid"); 
 
-        // 1. Buscar usuario
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 2. Asignar Rol (Lógica simple para actualizar String, ajusta si usas entidad Rol)
-        if (nuevoRol != null && !nuevoRol.isEmpty()) {
-            // usuario.setRol(nuevoRol); // Descomenta si tu Usuario usa String para rol
-            // Si usas Entidad Rol, aquí deberías buscar el rol en RolRepository
+        // 1. Asignar ROL
+        if (nuevoRolNombre != null && !nuevoRolNombre.isEmpty()) {
+            Optional<Rol> rolEncontrado = rolRepository.findByNombre(nuevoRolNombre);
+            
+            if (rolEncontrado.isPresent()) {
+                usuario.setRol(rolEncontrado.get());
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "El rol " + nuevoRolNombre + " no existe en la BD.");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
         }
 
-        // 3. Asignar Tarjeta RFID
+        // 2. Asignar o Quitar TARJETA RFID
         if (uidRecibido != null && !uidRecibido.isEmpty()) {
-            
-            // Buscamos si la tarjeta ya existe por su ID (que es el UID)
+            // CASO A: ASIGNAR NUEVA TARJETA
             TarjetaRfid tarjeta = tarjetaRfidRepository.findById(uidRecibido)
                     .orElse(TarjetaRfid.builder()
                         .tarjetaUid(uidRecibido)
                         .estado("ACTIVA")
                         .build());
             
-            // VINCULACIÓN: Tu entidad TarjetaRfid es la dueña de la relación.
-            // Le decimos a la tarjeta: "Tu dueño es este usuario".
-            tarjeta.setUsuario(usuario);
+            // Vinculación bidireccional (Importante para @OneToOne)
+            tarjeta.setUsuario(usuario); 
+            usuario.setTarjeta(tarjeta); 
             
-            // Guardamos la TARJETA para que se actualice la columna 'id_usuario_fk'
             tarjetaRfidRepository.save(tarjeta);
+        } else {
+            // CASO B: QUITAR TARJETA (Si envían string vacío)
+            // Verificamos si el usuario tiene tarjeta para desvincularla
+            if (usuario.getTarjeta() != null) {
+                TarjetaRfid tarjetaVieja = usuario.getTarjeta();
+                
+                // Rompemos la relación en ambos lados
+                tarjetaVieja.setUsuario(null); 
+                tarjetaRfidRepository.save(tarjetaVieja); // Actualizamos la tarjeta
+                
+                usuario.setTarjeta(null); // Actualizamos el usuario (pondrá NULL en uid_tarjeta)
+            }
         }
 
         usuarioRepository.save(usuario);
-        return ResponseEntity.ok(Map.of("message", "Datos asignados correctamente."));
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Usuario actualizado correctamente.");
+        return ResponseEntity.ok(response);
     }
-
-    // =======================================================
-    // TUS MÉTODOS ANTERIORES
-    // =======================================================
 
     @GetMapping("/mi-perfil")
     public ResponseEntity<Usuario> verMiPerfil(Authentication authentication) {
@@ -90,15 +111,5 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<List<Usuario>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
-    }
-    
-    // Este método busca por ID de tarjeta (UID)
-    @GetMapping("/buscar/rfid/{uid}")
-    public ResponseEntity<Usuario> buscarPorRfid(@PathVariable String uid) {
-        // OJO: Aquí quizás debas actualizar tu lógica en UsuarioService
-        // para buscar en la tabla tarjetas_rfid
-        return usuarioService.buscarPorUid(uid)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
     }
 }
