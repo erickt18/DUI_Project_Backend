@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.rfidcampus.rfid_campus.dto.LibroUpdateRequest;
 import com.rfidcampus.rfid_campus.model.Libro;
+import com.rfidcampus.rfid_campus.model.RegistroBiblioteca;
 import com.rfidcampus.rfid_campus.service.BibliotecaService;
 
 @RestController
@@ -31,7 +32,6 @@ public class BibliotecaController {
 
     // Chimbo
     // ================= CRUD LIBROS (COMPLETO) =================
-
     // 1. LEER / BUSCAR (MODIFICADO) ✅
     @GetMapping("/libros")
     public ResponseEntity<List<Libro>> listarLibros(
@@ -99,9 +99,8 @@ public class BibliotecaController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     // ================= ESTUDIANTE Y COLA =================
-    
     @GetMapping("/mis-prestamos")
     public ResponseEntity<?> verMisPrestamos(Authentication authentication) {
         String email = authentication.getName();
@@ -111,5 +110,10 @@ public class BibliotecaController {
     @PostMapping("/libros/{id}/espera")
     public ResponseEntity<?> unirseACola(@PathVariable Long id, @RequestParam String email) {
         return ResponseEntity.ok(Map.of("mensaje", bibliotecaService.agregarAColaEspera(id, email)));
+    }
+
+    @GetMapping("/prestamos")
+    public ResponseEntity<List<RegistroBiblioteca>> listarTodosPrestamos() {
+        return ResponseEntity.ok(bibliotecaService.listarTodosPrestamos());
     }
 }

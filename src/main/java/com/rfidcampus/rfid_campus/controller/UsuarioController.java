@@ -114,22 +114,24 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
     // ESTADÍSTICAS DEL DASHBOARD
-    @GetMapping("/dashboard/stats")
-    public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
-        long totalUsuarios = usuarioRepository.count();
-        long totalEstudiantes = usuarioRepository.countEstudiantes();
-        BigDecimal dineroTotal = usuarioRepository.sumarSaldoTotal();
-        long tarjetasAsignadas = usuarioRepository.countUsuariosConTarjeta();
+   @GetMapping("/dashboard/stats")
+public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
+    long totalUsuarios = usuarioRepository.count();
+    long totalEstudiantes = usuarioRepository.countEstudiantes();
+    long estudiantesActivos = usuarioRepository.countEstudiantesActivos(); // 🆕 NUEVO
+    BigDecimal dineroTotal = usuarioRepository.sumarSaldoTotal();
+    long tarjetasAsignadas = usuarioRepository.countUsuariosConTarjeta();
 
-        // Calcular porcentaje de tarjetas
-        double porcentaje = totalUsuarios > 0 ? ((double) tarjetasAsignadas / totalUsuarios) * 100 : 0;
+    double porcentaje = totalUsuarios > 0 ? ((double) tarjetasAsignadas / totalUsuarios) * 100 : 0;
 
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalEstudiantes", totalEstudiantes);
-        stats.put("dineroTotal", dineroTotal);
-        stats.put("tarjetasAsignadas", (int) porcentaje); // Lo enviamos como %
-        stats.put("totalUsuarios", totalUsuarios);
+    Map<String, Object> stats = new HashMap<>();
+    stats.put("totalEstudiantes", totalEstudiantes);
+    stats.put("estudiantesActivos", estudiantesActivos); // 🆕 NUEVO
+    stats.put("dineroTotal", dineroTotal);
+    stats.put("tarjetasAsignadas", (int) porcentaje);
+    stats.put("totalUsuarios", totalUsuarios);
 
-        return ResponseEntity.ok(stats);
-    }
+    return ResponseEntity.ok(stats);
+}
+
 }

@@ -9,12 +9,10 @@ import org.springframework.data.jpa.repository.Query; // <--- NO OLVIDES ESTA IM
 import com.rfidcampus.rfid_campus.model.Usuario;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
-    
+
     Optional<Usuario> findByEmail(String email);
-    
+
     boolean existsByEmail(String email);
-
-
 
     // 1. Contar cuántos son ESTUDIANTES
     @Query("SELECT COUNT(u) FROM Usuario u WHERE u.rol.nombre = 'ROLE_ESTUDIANTE'")
@@ -28,4 +26,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // 3. Contar cuántos tienen tarjeta asignada
     @Query("SELECT COUNT(u) FROM Usuario u WHERE u.tarjeta IS NOT NULL")
     long countUsuariosConTarjeta();
+
+    @Query("SELECT COUNT(u) FROM Usuario u WHERE u.activo = true AND u.rol.nombre = 'ROLE_ESTUDIANTE'")
+    long countEstudiantesActivos();
 }
