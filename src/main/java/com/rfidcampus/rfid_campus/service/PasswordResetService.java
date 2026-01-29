@@ -36,7 +36,7 @@ public class PasswordResetService {
     }
 
     public void requestReset(ForgotPasswordRequest req) {
-        // ✅ Buscamos en la tabla usuarios
+        //  Buscamos en la tabla usuarios
         Usuario usuario = usuarioRepo.findByEmail(req.getEmail())
                 .orElseThrow(() -> new RuntimeException("Correo no registrado"));
 
@@ -84,7 +84,7 @@ public class PasswordResetService {
             throw new RuntimeException("Token expirado o ya utilizado");
         }
 
-        // ✅ Actualizamos al Usuario
+        //  Actualizamos al Usuario
         Usuario usuario = prt.getUsuario();
         usuario.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         usuarioRepo.save(usuario);

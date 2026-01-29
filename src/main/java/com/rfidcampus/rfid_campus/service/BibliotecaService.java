@@ -141,7 +141,7 @@ public class BibliotecaService {
         return libroRepo.findByTituloContainingIgnoreCase(titulo);
     }
 
-    // ✅ AQUÍ ESTÁ LA CORRECCIÓN: EL MÉTODO QUE FALTABA
+    
     public List<Libro> buscarPorTipo(String tipo) {
         return libroRepo.findByTipoMaterialIgnoreCase(tipo);
     }

@@ -11,6 +11,6 @@ public interface TarjetaRfidRepository extends JpaRepository<TarjetaRfid, String
    
     Optional<TarjetaRfid> findByUsuario(Usuario usuario);
     
-    // ✅ CORREGIDO: findByTarjetaUid (no findByUidTarjeta)
+    
     Optional<TarjetaRfid> findByTarjetaUid(String tarjetaUid);
 }

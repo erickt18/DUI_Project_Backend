@@ -118,7 +118,7 @@ public class UsuarioController {
 public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
     long totalUsuarios = usuarioRepository.count();
     long totalEstudiantes = usuarioRepository.countEstudiantes();
-    long estudiantesActivos = usuarioRepository.countEstudiantesActivos(); // 🆕 NUEVO
+    long estudiantesActivos = usuarioRepository.countEstudiantesActivos(); 
     BigDecimal dineroTotal = usuarioRepository.sumarSaldoTotal();
     long tarjetasAsignadas = usuarioRepository.countUsuariosConTarjeta();
 
@@ -126,7 +126,7 @@ public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
 
     Map<String, Object> stats = new HashMap<>();
     stats.put("totalEstudiantes", totalEstudiantes);
-    stats.put("estudiantesActivos", estudiantesActivos); // 🆕 NUEVO
+    stats.put("estudiantesActivos", estudiantesActivos); 
     stats.put("dineroTotal", dineroTotal);
     stats.put("tarjetasAsignadas", (int) porcentaje);
     stats.put("totalUsuarios", totalUsuarios);

@@ -2,21 +2,21 @@ package com.rfidcampus.rfid_campus.service;
 
 import java.math.BigDecimal;
 
-import org.springframework.stereotype.Service; // ✅ Antes EstudianteRepository
+import org.springframework.stereotype.Service; 
 
 import com.rfidcampus.rfid_campus.dto.DashboardDTO;
 import com.rfidcampus.rfid_campus.model.Usuario;
-import com.rfidcampus.rfid_campus.repository.ProductoRepository; // ✅ Importar Usuario
+import com.rfidcampus.rfid_campus.repository.ProductoRepository; 
 import com.rfidcampus.rfid_campus.repository.TransaccionRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 
-import lombok.RequiredArgsConstructor; // ✅ Importante
+import lombok.RequiredArgsConstructor; 
 
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final UsuarioRepository usuarioRepository; // ✅ Corregido
+    private final UsuarioRepository usuarioRepository; 
     private final TransaccionRepository transaccionRepository;
     private final ProductoRepository productoRepository;
 

@@ -12,13 +12,13 @@ import com.rfidcampus.rfid_campus.model.Usuario;
 
 public interface TransaccionRepository extends JpaRepository<Transaccion, Long> {
 
-    // ✅ MÉTODOS QUE YA TIENES (déjalos tal cual)
+    
     List<Transaccion> findByUsuarioIdOrderByFechaDesc(Long usuarioId);
     List<Transaccion> findTop100ByOrderByFechaDesc();
     List<Transaccion> findByUsuarioEmailAndTipoOrderByFechaDesc(String email, String tipo);
     List<Transaccion> findByUsuarioOrderByFechaDesc(Usuario usuario);
 
-    // 🆕 NUEVOS MÉTODOS PARA REPORTES MENSUALES
+    
     
     // 1. Obtener transacciones de un mes específico
     @Query("SELECT t FROM Transaccion t WHERE YEAR(t.fecha) = :anio AND MONTH(t.fecha) = :mes AND t.tipo = 'COMPRA_BAR'")

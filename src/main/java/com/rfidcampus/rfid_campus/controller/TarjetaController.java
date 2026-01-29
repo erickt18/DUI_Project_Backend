@@ -131,7 +131,7 @@ public class TarjetaController {
         }
     }
 
-    // 6. ✅ OBTENER TARJETA DE UN USUARIO (PARA EL PERFIL DEL ESTUDIANTE)
+    // 6.  OBTENER TARJETA DE UN USUARIO (PARA EL PERFIL DEL ESTUDIANTE)
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<?> obtenerTarjetaPorUsuario(@PathVariable Long usuarioId) {
         try {

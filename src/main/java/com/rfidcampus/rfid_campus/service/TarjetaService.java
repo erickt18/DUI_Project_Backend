@@ -169,9 +169,9 @@ public class TarjetaService {
         tarjetaRepo.save(tarjeta);
     }
 
-    // ✅ MÉTODO CORREGIDO: BUSCAR POR UID
+    //  BUSCAR POR UID
     public TarjetaRfid buscarPorUid(String uid) {
-    return tarjetaRepo.findByTarjetaUid(uid).orElse(null); // ✅ CORREGIDO
+    return tarjetaRepo.findByTarjetaUid(uid).orElse(null); 
 }
 
 }

@@ -30,7 +30,7 @@ public class BibliotecaController {
         this.bibliotecaService = bibliotecaService;
     }
 
-    // Chimbo
+    
     // ================= CRUD LIBROS (COMPLETO) =================
     // 1. LEER / BUSCAR (MODIFICADO) ✅
     @GetMapping("/libros")

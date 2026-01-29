@@ -77,7 +77,7 @@ public class Usuario {
         return rol != null ? rol.getNombre() : "ROLE_ESTUDIANTE";
     }
     
-    // Helper para obtener el UID de la tarjeta fácilmente (para que no rompa otros códigos)
+    // Helper para obtener el UID de la tarjeta fácilmente .
     public String getUidTarjeta() {
         return tarjeta != null ? tarjeta.getTarjetaUid() : null; 
         

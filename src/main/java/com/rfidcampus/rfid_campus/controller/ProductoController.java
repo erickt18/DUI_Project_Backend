@@ -53,7 +53,7 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.guardar(producto));
     }
 
-    // 🔥 ACTUALIZAR PRODUCTO (PUT) - ESTE ES EL IMPORTANTE
+    //  ACTUALIZAR PRODUCTO (PUT) - ESTE ES EL IMPORTANTE
     @PutMapping("/{id}")
     public ResponseEntity<Producto> actualizar(
             @PathVariable Long id, 

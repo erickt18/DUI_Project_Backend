@@ -41,9 +41,8 @@ public class EstudianteService {
     }
 
     // ========================================================
-    // 🧠 ALGORITMOS DE BÚSQUEDA (Requerimiento Académico)
+    //  ALGORITMOS DE BÚSQUEDA 
     // ========================================================
-
     // A. BÚSQUEDA LINEAL: Buscar una transacción por palabra clave (ej: "Hamburguesa")
     public List<Transaccion> buscarTransaccionPorDetalle(String email, String palabraClave) {
         List<Transaccion> misMovimientos = obtenerMisTransacciones(email);
@@ -53,9 +52,7 @@ public class EstudianteService {
                 .filter(t -> t.getDetalle().toLowerCase().contains(palabraClave.toLowerCase()))
                 .collect(Collectors.toList());
     }
-
     // B. BÚSQUEDA BINARIA: Buscar una transacción por MONTO exacto
-    // OJO: Para búsqueda binaria, la lista DEBE estar ordenada primero.
     public Transaccion buscarTransaccionPorMonto(String email, Double montoBuscado) {
         List<Transaccion> lista = obtenerMisTransacciones(email);
         

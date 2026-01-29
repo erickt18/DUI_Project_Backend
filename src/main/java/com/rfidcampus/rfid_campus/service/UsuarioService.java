@@ -32,7 +32,7 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
-    // ✅ CORREGIDO: Usamos findById porque el UID es la llave primaria
+    
     public Optional<Usuario> buscarPorUid(String uid) {
         return tarjetaRepository.findById(uid)
                 .map(tarjeta -> tarjeta.getUsuario()); 

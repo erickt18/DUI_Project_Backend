@@ -38,8 +38,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     public class TarjetaController {
 
         private final TarjetaService tarjetaService;
-        private final UsuarioRepository usuarioRepo; // ✅ AGREGAR
-        private final TarjetaRfidRepository tarjetaRepo; // ✅ AGREGAR
+        private final UsuarioRepository usuarioRepo; 
+        private final TarjetaRfidRepository tarjetaRepo; 
 
         public TarjetaController(TarjetaService tarjetaService,
                 UsuarioRepository usuarioRepo,
@@ -49,7 +49,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
             this.tarjetaRepo = tarjetaRepo;
         }
 
-        // ... resto de métodos
+       
     }
 
 }
