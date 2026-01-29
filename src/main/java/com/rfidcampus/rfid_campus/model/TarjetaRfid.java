@@ -32,4 +32,5 @@ public class TarjetaRfid {
     @OneToOne // Relación 1 a 1 (Una tarjeta, un usuario)
     @JoinColumn(name = "id_usuario_fk", referencedColumnName = "id_usuario")
     private Usuario usuario;
+    
 }

@@ -17,9 +17,27 @@ public class ProductoService {
         this.productoRepository = productoRepository;
     }
 
-    // Método principal que llama al controlador
+    // ========== CRUD BÁSICO ==========
+    
+    public List<Producto> listarTodos() { 
+        return productoRepository.findAll(); 
+    }
+
+    public Producto guardar(Producto p) { 
+        return productoRepository.save(p); 
+    }
+
+    public void eliminar(Long id) { 
+        productoRepository.deleteById(id); 
+    }
+
+    public Producto buscarPorId(Long id) {
+        return productoRepository.findById(id).orElse(null);
+    }
+
+    // ========== MÉTODOS DE ORDENAMIENTO ==========
+    
     public List<Producto> listarProductosOrdenados(String algoritmo) {
-        // Obtenemos la lista de la BD
         List<Producto> productos = new ArrayList<>(productoRepository.findAll());
 
         switch (algoritmo.toLowerCase()) {
@@ -36,16 +54,12 @@ public class ProductoService {
                 ordenarPorShell(productos);
                 break;
             default:
-                // Por defecto Intercambio si no se especifica
                 ordenarPorIntercambio(productos);
                 break;
         }
         return productos;
     }
 
-    // ============================================================
-    // 1. MÉTODO DE INTERCAMBIO (Burbuja mejorada o estándar)
-    // ============================================================
     private void ordenarPorIntercambio(List<Producto> lista) {
         int n = lista.size();
         for (int i = 0; i < n - 1; i++) {
@@ -57,9 +71,6 @@ public class ProductoService {
         }
     }
 
-    // ============================================================
-    // 2. MÉTODO DE SELECCIÓN
-    // ============================================================
     private void ordenarPorSeleccion(List<Producto> lista) {
         int n = lista.size();
         for (int i = 0; i < n - 1; i++) {
@@ -73,9 +84,6 @@ public class ProductoService {
         }
     }
 
-    // ============================================================
-    // 3. MÉTODO DE INSERCIÓN
-    // ============================================================
     private void ordenarPorInsercion(List<Producto> lista) {
         int n = lista.size();
         for (int i = 1; i < n; i++) {
@@ -90,9 +98,6 @@ public class ProductoService {
         }
     }
 
-    // ============================================================
-    // 4. MÉTODO SHELL
-    // ============================================================
     private void ordenarPorShell(List<Producto> lista) {
         int n = lista.size();
         for (int gap = n / 2; gap > 0; gap /= 2) {
@@ -107,11 +112,7 @@ public class ProductoService {
         }
     }
 
-    // ============================================================
-    // ✅ BÚSQUEDA BINARIA (Requiere lista ordenada)
-    // ============================================================
     public Producto buscarPorPrecioBinario(double precioBuscado) {
-        // 1. Primero ordenamos (Shell es rápido)
         List<Producto> lista = listarProductosOrdenados("shell");
         
         int izquierda = 0;
@@ -131,36 +132,12 @@ public class ProductoService {
                 derecha = medio - 1;
             }
         }
-        return null; // No encontrado
+        return null;
     }
-// Auxiliar para intercambiar elementos
+
     private void swap(List<Producto> lista, int i, int j) {
         Producto temp = lista.get(i);
         lista.set(i, lista.get(j));
         lista.set(j, temp);
     }
-    
-    // ==========================================
-    // MÉTODOS CRUD BÁSICOS (Corregido)
-    // ==========================================
-
-    public List<Producto> listarTodos() { 
-        return productoRepository.findAll(); 
-    }
-
-    public Producto guardar(Producto p) { 
-        return productoRepository.save(p); 
-    }
-
-    // ✅ ESTE ES EL ÚNICO QUE DEBES TENER
-    public void eliminar(Long id) { 
-        productoRepository.deleteById(id); 
-    }
-
-    public Producto buscarPorId(Long id) {
-        return productoRepository.findById(id).orElse(null);
-    }
-    
-
-    
 }

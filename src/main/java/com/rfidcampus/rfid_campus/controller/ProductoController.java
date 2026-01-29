@@ -26,21 +26,20 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    // Listar normal (sin orden manual)
+    // Listar todos los productos
     @GetMapping
     public ResponseEntity<List<Producto>> listarTodos() {
         return ResponseEntity.ok(productoService.listarTodos());
     }
 
-
-
-    // Opciones: intercambio, seleccion, insercion, shell
+    // Listar productos ordenados
     @GetMapping("/ordenar")
-    public ResponseEntity<List<Producto>> listarOrdenados(@RequestParam(defaultValue = "intercambio") String metodo) {
+    public ResponseEntity<List<Producto>> listarOrdenados(
+            @RequestParam(defaultValue = "intercambio") String metodo) {
         return ResponseEntity.ok(productoService.listarProductosOrdenados(metodo));
     }
 
-    // ENDPOINT BÚSQUEDA BINARIA
+    // Búsqueda binaria por precio
     @GetMapping("/buscar-precio")
     public ResponseEntity<?> buscarPorPrecio(@RequestParam double precio) {
         Producto p = productoService.buscarPorPrecioBinario(precio);
@@ -48,33 +47,40 @@ public class ProductoController {
         return ResponseEntity.notFound().build();
     }
     
-    // Guardar (Para Admin)
+    // Crear nuevo producto
     @PostMapping
-    public ResponseEntity<Producto> guardar(@RequestBody Producto p) {
-        return ResponseEntity.ok(productoService.guardar(p));
-    }
-    // 🆕 EDITAR PRODUCTO (PUT)
-    // Sirve para cambiar el precio o el stock de una hamburguesa
-    @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto productoEditado) {
-        // Opción rápida usando el Repo directo o a través del servicio
-        // Aquí asumo que agregas un método 'actualizar' en tu ProductoService
-        // O lo haces directo aquí si es urgente:
-        Producto p = productoService.buscarPorId(id); // Necesitas este método en el service
-        if (p == null) return ResponseEntity.notFound().build();
-        
-        p.setNombre(productoEditado.getNombre());
-        p.setPrecio(productoEditado.getPrecio());
-        p.setStock(productoEditado.getStock());
-        
-        return ResponseEntity.ok(productoService.guardar(p));
+    public ResponseEntity<Producto> crear(@RequestBody Producto producto) {
+        return ResponseEntity.ok(productoService.guardar(producto));
     }
 
-    // 🆕 ELIMINAR PRODUCTO (DELETE)
+    // 🔥 ACTUALIZAR PRODUCTO (PUT) - ESTE ES EL IMPORTANTE
+    @PutMapping("/{id}")
+    public ResponseEntity<Producto> actualizar(
+            @PathVariable Long id, 
+            @RequestBody Producto productoEditado) {
+        
+        Producto productoExistente = productoService.buscarPorId(id);
+        
+        if (productoExistente == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Actualizar campos
+        productoExistente.setNombre(productoEditado.getNombre());
+        productoExistente.setDescripcion(productoEditado.getDescripcion());
+        productoExistente.setPrecio(productoEditado.getPrecio());
+        productoExistente.setStock(productoEditado.getStock());
+        productoExistente.setActivo(productoEditado.getActivo());
+        
+        Producto productoActualizado = productoService.guardar(productoExistente);
+        
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    // Eliminar producto
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
-        productoService.eliminar(id); // Necesitas agregar este método simple en el Service
+    public ResponseEntity<?> eliminar(@PathVariable Long id) {
+        productoService.eliminar(id);
         return ResponseEntity.ok().build();
     }
-    
 }

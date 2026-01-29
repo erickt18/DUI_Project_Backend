@@ -5,8 +5,11 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query; // <--- NO OLVIDES ESTA IMPORTACIÓN
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.rfidcampus.rfid_campus.model.Usuario;
+import com.rfidcampus.rfid_campus.service.TarjetaService;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
@@ -29,4 +32,24 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     @Query("SELECT COUNT(u) FROM Usuario u WHERE u.activo = true AND u.rol.nombre = 'ROLE_ESTUDIANTE'")
     long countEstudiantesActivos();
+
+    @RestController
+    @RequestMapping("/api/tarjetas")
+    public class TarjetaController {
+
+        private final TarjetaService tarjetaService;
+        private final UsuarioRepository usuarioRepo; // ✅ AGREGAR
+        private final TarjetaRfidRepository tarjetaRepo; // ✅ AGREGAR
+
+        public TarjetaController(TarjetaService tarjetaService,
+                UsuarioRepository usuarioRepo,
+                TarjetaRfidRepository tarjetaRepo) {
+            this.tarjetaService = tarjetaService;
+            this.usuarioRepo = usuarioRepo;
+            this.tarjetaRepo = tarjetaRepo;
+        }
+
+        // ... resto de métodos
+    }
+
 }

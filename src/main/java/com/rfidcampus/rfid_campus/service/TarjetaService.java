@@ -41,7 +41,6 @@ public class TarjetaService {
 
     @Transactional
     public void asignarTarjeta(String uid, Long usuarioId) {
-        // ✅ CORREGIDO: Usamos findById
         TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada en el sistema"));
 
@@ -52,19 +51,14 @@ public class TarjetaService {
             throw new RuntimeException("Esta tarjeta ya pertenece a otro usuario");
         }
 
-        // ✅ CORREGIDO: Asignación de Objetos (No Strings)
         tarjeta.setUsuario(usuario);
-        // Si tu Usuario tiene el campo 'tarjeta', descomenta la siguiente línea:
-        // usuario.setTarjeta(tarjeta); 
-        // usuario.setUidTarjeta(uid); <--- ESTO DABA ERROR si no tienes ese campo String
-
         usuarioRepo.save(usuario);
         tarjetaRepo.save(tarjeta);
     }
 
     @Transactional
     public void bloquearTarjeta(String uid) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(uid) // ✅ findById
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
         tarjeta.setEstado("BLOQUEADA");
         tarjetaRepo.save(tarjeta);
@@ -72,7 +66,7 @@ public class TarjetaService {
 
     @Transactional
     public void desbloquearTarjeta(String uid) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(uid) // ✅ findById
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
         tarjeta.setEstado("ACTIVA");
         tarjetaRepo.save(tarjeta);
@@ -80,7 +74,7 @@ public class TarjetaService {
 
     @Transactional
     public Usuario recargarSaldo(String uid, Double montoDouble) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(uid) // ✅ findById
+        TarjetaRfid tarjeta = tarjetaRepo.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
 
         if ("BLOQUEADA".equalsIgnoreCase(tarjeta.getEstado())) {
@@ -113,7 +107,7 @@ public class TarjetaService {
 
     @Transactional
     public Map<String, Object> procesarCompraMultiple(CompraRequest req) {
-        TarjetaRfid tarjeta = tarjetaRepo.findById(req.getTarjetaUid()) // ✅ findById
+        TarjetaRfid tarjeta = tarjetaRepo.findById(req.getTarjetaUid())
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
 
         if (!"ACTIVA".equalsIgnoreCase(tarjeta.getEstado())) {
@@ -165,16 +159,19 @@ public class TarjetaService {
 
     @Transactional
     public void bloquearTarjetaPorEmail(String email) {
-        // 1. Buscamos al usuario por su email (del token)
         Usuario usuario = usuarioRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 2. Buscamos la tarjeta asociada a ese usuario (Usando el método nuevo del Repo)
         TarjetaRfid tarjeta = tarjetaRepo.findByUsuario(usuario)
                 .orElseThrow(() -> new RuntimeException("No tienes una tarjeta asignada para bloquear."));
 
-        // 3. Bloqueamos
         tarjeta.setEstado("BLOQUEADA");
         tarjetaRepo.save(tarjeta);
     }
+
+    // ✅ MÉTODO CORREGIDO: BUSCAR POR UID
+    public TarjetaRfid buscarPorUid(String uid) {
+    return tarjetaRepo.findByTarjetaUid(uid).orElse(null); // ✅ CORREGIDO
+}
+
 }
