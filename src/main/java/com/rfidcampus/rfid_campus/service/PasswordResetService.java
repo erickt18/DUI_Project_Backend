@@ -1,12 +1,11 @@
 package com.rfidcampus.rfid_campus.service;
 
-import java.time.LocalDateTime; // Asegúrate de tener este DTO
-import java.util.UUID; // Asegúrate de tener este DTO
+import java.time.LocalDateTime;
+import java.util.UUID;
 
-import org.springframework.mail.SimpleMailMessage; // ✅ CAMBIO: Usuario
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.crypto.password.PasswordEncoder; // ✅ CAMBIO: UsuarioRepository
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.rfidcampus.rfid_campus.dto.ForgotPasswordRequest;
 import com.rfidcampus.rfid_campus.dto.ResetPasswordRequest;
@@ -15,88 +14,78 @@ import com.rfidcampus.rfid_campus.model.Usuario;
 import com.rfidcampus.rfid_campus.repository.PasswordResetTokenRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class PasswordResetService {
-    
-    
+
     private final UsuarioRepository usuarioRepo;
     private final PasswordResetTokenRepository tokenRepo;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
-    public PasswordResetService(
-            UsuarioRepository usuarioRepo,
-            PasswordResetTokenRepository tokenRepo,
-            JavaMailSender mailSender,
-            PasswordEncoder passwordEncoder) {
-        this.usuarioRepo = usuarioRepo;
-        this.tokenRepo = tokenRepo;
-        this.mailSender = mailSender;
-        this.passwordEncoder = passwordEncoder;
-    }
-
+    @Transactional
     public void requestReset(ForgotPasswordRequest req) {
-        //  Buscamos en la tabla usuarios
-        Usuario usuario = usuarioRepo.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("Correo no registrado"));
-
-        // Validación opcional de RFID (si el DTO lo trae)
-        if (req.getRfid() != null && !req.getRfid().isBlank()) {
-            if (usuario.getUidTarjeta() == null || !usuario.getUidTarjeta().equals(req.getRfid())) {
-                throw new RuntimeException("El RFID no coincide con el registrado");
-            }
-        }
-
-        // Generar Token
-        String token = UUID.randomUUID().toString();
-        PasswordResetToken prt = new PasswordResetToken();
-        prt.setToken(token);
-        prt.setUsuario(usuario); // ✅ setUsuario (asegúrate de haber actualizado la entidad PasswordResetToken)
-        prt.setExpiresAt(LocalDateTime.now().plusMinutes(30));
-        tokenRepo.save(prt);
-
-        // Enviar Correo
-        String link = "http://localhost:5173/reset-password?token=" + token; // Puerto de React (Vite) suele ser 5173
-
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setTo(usuario.getEmail());
-        msg.setSubject("DUI - Restablecer contraseña");
-        msg.setText("Hola " + usuario.getNombreCompleto() +
-                "\n\nHas solicitado restablecer tu contraseña." +
-                "\nHaz clic en el siguiente enlace (válido por 30 min):\n" + link +
-                "\n\nSi no fuiste tú, ignora este correo.");
+        System.out.println("🔍 Buscando usuario: " + req.getEmail());
         
-        // Enviamos el correo (puede fallar si la clave de Gmail no es válida, pero el código compilará)
-        try {
-            mailSender.send(msg);
-        } catch (Exception e) {
-            System.err.println("Error enviando correo: " + e.getMessage());
-            // No lanzamos error para no revelar si el correo existe o no por seguridad, 
-            // o puedes lanzarlo si prefieres feedback inmediato.
-        }
+        Usuario usuario = usuarioRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        System.out.println("✅ Usuario encontrado: " + usuario.getNombreCompleto());
+
+        // Eliminar tokens anteriores del usuario
+        tokenRepo.deleteByUsuarioId(usuario.getId()); // ✅ CORREGIDO: getId() en lugar de getIdUsuario()
+        System.out.println("🗑️ Tokens anteriores eliminados");
+
+        // Generar nuevo token
+        String token = UUID.randomUUID().toString();
+        
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .usuario(usuario)
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .used(false)
+                .build();
+
+        tokenRepo.save(resetToken);
+        System.out.println("✅ Token de recuperación generado para: " + usuario.getEmail());
+
+        // Enviar email
+        emailService.sendPasswordResetEmail(usuario.getEmail(), token);
+        System.out.println("✅ Email de recuperación enviado a: " + usuario.getEmail());
     }
 
-    public void reset(ResetPasswordRequest req) {
-        PasswordResetToken prt = tokenRepo.findByToken(req.getToken())
+    @Transactional
+    public void resetPassword(ResetPasswordRequest req) {
+        System.out.println("🔍 Validando token: " + req.getToken());
+        
+        PasswordResetToken token = tokenRepo.findByToken(req.getToken())
                 .orElseThrow(() -> new RuntimeException("Token inválido"));
 
-        if (prt.isUsed() || prt.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expirado o ya utilizado");
+        if (token.isUsed()) {
+            throw new RuntimeException("El token ya fue utilizado");
         }
 
-        //  Actualizamos al Usuario
-        Usuario usuario = prt.getUsuario();
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("El token ha expirado");
+        }
+
+        Usuario usuario = token.getUsuario();
+        
+        // ✅ ENCRIPTAR LA CONTRASEÑA CON BCRYPT
         usuario.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         usuarioRepo.save(usuario);
 
-        prt.setUsed(true);
-        tokenRepo.save(prt);
+        token.setUsed(true);
+        tokenRepo.save(token);
+        
+        System.out.println("✅ Contraseña actualizada para: " + usuario.getEmail());
     }
-    
-    // Validar si el token sirve (para que el Frontend sepa si mostrar el formulario)
-    public boolean validate(String token) {
-        return tokenRepo.findByToken(token)
-                .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(LocalDateTime.now()))
-                .isPresent();
+
+    public boolean isTokenValid(String tokenStr) {
+        return tokenRepo.findByToken(tokenStr)
+                .map(token -> !token.isUsed() && token.getExpiresAt().isAfter(LocalDateTime.now()))
+                .orElse(false);
     }
 }

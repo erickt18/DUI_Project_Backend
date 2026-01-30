@@ -83,17 +83,29 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
         try {
+            System.out.println("📧 Email recibido: " + req.getEmail());
+            
+            if (req.getEmail() == null || req.getEmail().isEmpty()) {
+                System.err.println("❌ Email vacío o null");
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El email es requerido"));
+            }
+            
             passwordResetService.requestReset(req);
+            System.out.println("✅ Email de recuperación enviado");
             return ResponseEntity.ok(Map.of("message", "Correo de recuperación enviado."));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            System.err.println("❌ Error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
     // 2. Validar token
     @GetMapping("/validate-token")
     public ResponseEntity<?> validateToken(@RequestParam String token) {
-        boolean isValid = passwordResetService.validate(token);
+        boolean isValid = passwordResetService.isTokenValid(token); // ✅ CORREGIDO
         return ResponseEntity.ok(Map.of("valid", isValid));
     }
 
@@ -101,7 +113,7 @@ public class AuthController {
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest req) {
         try {
-            passwordResetService.reset(req);
+            passwordResetService.resetPassword(req); // ✅ CORREGIDO
             return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente."));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
