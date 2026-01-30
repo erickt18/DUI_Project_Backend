@@ -3,6 +3,8 @@ package com.rfidcampus.rfid_campus.model;
 import java.math.BigDecimal; 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,7 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne; // <--- IMPORTANTE
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -40,18 +42,16 @@ public class Usuario {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    
     private String carrera;
     
     @Column(name = "fecha_nacimiento")
     private LocalDateTime fechaNacimiento;
 
-    
-    @OneToOne 
-    @JoinColumn(name = "uid_tarjeta")
+    // ✅ RELACIÓN BIDIRECCIONAL (mappedBy porque TarjetaRfid es el dueño)
+    @OneToOne(mappedBy = "usuario", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("usuario")
     private TarjetaRfid tarjeta;
 
-   
     @Builder.Default
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal saldo = BigDecimal.ZERO;
@@ -72,14 +72,12 @@ public class Usuario {
         createdAt = LocalDateTime.now();
     }
 
-   
     public String getRolNombre() {
         return rol != null ? rol.getNombre() : "ROLE_ESTUDIANTE";
     }
     
-    // Helper para obtener el UID de la tarjeta fácilmente .
+    // ✅ Helper para obtener el UID de la tarjeta fácilmente
     public String getUidTarjeta() {
         return tarjeta != null ? tarjeta.getTarjetaUid() : null; 
-        
     }
 }

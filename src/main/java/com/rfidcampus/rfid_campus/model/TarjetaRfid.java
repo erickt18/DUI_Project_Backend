@@ -27,10 +27,9 @@ public class TarjetaRfid {
     @Column(name = "estado", length = 20)
     private String estado; // ACTIVA, BLOQUEADA
 
-  
+    // ✅ DUEÑO DE LA RELACIÓN OneToOne
     @JsonIgnoreProperties("tarjeta")
-    @OneToOne // Relación 1 a 1 (Una tarjeta, un usuario)
+    @OneToOne
     @JoinColumn(name = "id_usuario_fk", referencedColumnName = "id_usuario")
     private Usuario usuario;
-    
 }

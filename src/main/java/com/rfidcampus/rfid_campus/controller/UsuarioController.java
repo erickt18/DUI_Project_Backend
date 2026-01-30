@@ -4,11 +4,10 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CrossOrigin; 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,89 +15,44 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.rfidcampus.rfid_campus.model.Rol;
-import com.rfidcampus.rfid_campus.model.TarjetaRfid;
 import com.rfidcampus.rfid_campus.model.Usuario;
-import com.rfidcampus.rfid_campus.repository.RolRepository;
-import com.rfidcampus.rfid_campus.repository.TarjetaRfidRepository;
 import com.rfidcampus.rfid_campus.repository.UsuarioRepository;
 import com.rfidcampus.rfid_campus.service.UsuarioService;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "*") 
+@CrossOrigin(origins = "*")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
-    private final TarjetaRfidRepository tarjetaRfidRepository;
-    private final RolRepository rolRepository;
 
-    public UsuarioController(UsuarioService usuarioService, 
-                             UsuarioRepository usuarioRepository, 
-                             TarjetaRfidRepository tarjetaRfidRepository,
-                             RolRepository rolRepository) {
+    public UsuarioController(UsuarioService usuarioService,
+            UsuarioRepository usuarioRepository) {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
-        this.tarjetaRfidRepository = tarjetaRfidRepository;
-        this.rolRepository = rolRepository;
     }
 
+    // ✅ ENDPOINT CORREGIDO - USA EL SERVICE
     @PutMapping("/{id}/asignar-datos")
     public ResponseEntity<?> asignarTarjetaYRol(@PathVariable Long id, @RequestBody Map<String, String> datos) {
-        
-        String nuevoRolNombre = datos.get("rol");      
-        String uidRecibido = datos.get("tarjetaUid"); 
 
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        try {
+            String nuevoRolNombre = datos.get("rol");
+            String uidRecibido = datos.get("tarjetaUid");
 
-        // 1. Asignar ROL
-        if (nuevoRolNombre != null && !nuevoRolNombre.isEmpty()) {
-            Optional<Rol> rolEncontrado = rolRepository.findByNombre(nuevoRolNombre);
-            
-            if (rolEncontrado.isPresent()) {
-                usuario.setRol(rolEncontrado.get());
-            } else {
-                Map<String, String> errorResponse = new HashMap<>();
-                errorResponse.put("error", "El rol " + nuevoRolNombre + " no existe en la BD.");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
+            // ✅ USAR EL MÉTODO DEL SERVICE QUE CREA LA TARJETA AUTOMÁTICAMENTE
+            Usuario usuario = usuarioService.asignarDatos(id, nuevoRolNombre, uidRecibido);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Usuario actualizado correctamente",
+                    "usuario", usuario
+            ));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", e.getMessage()));
         }
-
-        // 2. Asignar o Quitar TARJETA RFID
-        if (uidRecibido != null && !uidRecibido.isEmpty()) {
-            // CASO A: ASIGNAR NUEVA TARJETA
-            TarjetaRfid tarjeta = tarjetaRfidRepository.findById(uidRecibido)
-                    .orElse(TarjetaRfid.builder()
-                        .tarjetaUid(uidRecibido)
-                        .estado("ACTIVA")
-                        .build());
-            
-            // Vinculación bidireccional (Importante para @OneToOne)
-            tarjeta.setUsuario(usuario); 
-            usuario.setTarjeta(tarjeta); 
-            
-            tarjetaRfidRepository.save(tarjeta);
-        } else {
-            // CASO B: QUITAR TARJETA (Si envían string vacío)
-            // Verificamos si el usuario tiene tarjeta para desvincularla
-            if (usuario.getTarjeta() != null) {
-                TarjetaRfid tarjetaVieja = usuario.getTarjeta();
-                
-                // Rompemos la relación en ambos lados
-                tarjetaVieja.setUsuario(null); 
-                tarjetaRfidRepository.save(tarjetaVieja); // Actualizamos la tarjeta
-                
-                usuario.setTarjeta(null); // Actualizamos el usuario (pondrá NULL en uid_tarjeta)
-            }
-        }
-
-        usuarioRepository.save(usuario);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Usuario actualizado correctamente.");
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/mi-perfil")
@@ -113,25 +67,57 @@ public class UsuarioController {
     public ResponseEntity<List<Usuario>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
+
     // ESTADÍSTICAS DEL DASHBOARD
-   @GetMapping("/dashboard/stats")
-public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
-    long totalUsuarios = usuarioRepository.count();
-    long totalEstudiantes = usuarioRepository.countEstudiantes();
-    long estudiantesActivos = usuarioRepository.countEstudiantesActivos(); 
-    BigDecimal dineroTotal = usuarioRepository.sumarSaldoTotal();
-    long tarjetasAsignadas = usuarioRepository.countUsuariosConTarjeta();
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<Map<String, Object>> obtenerEstadisticas() {
+        long totalUsuarios = usuarioRepository.count();
+        long totalEstudiantes = usuarioRepository.countEstudiantes();
+        long estudiantesActivos = usuarioRepository.countEstudiantesActivos();
+        BigDecimal dineroTotal = usuarioRepository.sumarSaldoTotal();
+        long tarjetasAsignadas = usuarioRepository.countUsuariosConTarjeta();
 
-    double porcentaje = totalUsuarios > 0 ? ((double) tarjetasAsignadas / totalUsuarios) * 100 : 0;
+        double porcentaje = totalUsuarios > 0 ? ((double) tarjetasAsignadas / totalUsuarios) * 100 : 0;
 
-    Map<String, Object> stats = new HashMap<>();
-    stats.put("totalEstudiantes", totalEstudiantes);
-    stats.put("estudiantesActivos", estudiantesActivos); 
-    stats.put("dineroTotal", dineroTotal);
-    stats.put("tarjetasAsignadas", (int) porcentaje);
-    stats.put("totalUsuarios", totalUsuarios);
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalEstudiantes", totalEstudiantes);
+        stats.put("estudiantesActivos", estudiantesActivos);
+        stats.put("dineroTotal", dineroTotal);
+        stats.put("tarjetasAsignadas", (int) porcentaje);
+        stats.put("totalUsuarios", totalUsuarios);
 
-    return ResponseEntity.ok(stats);
-}
+        return ResponseEntity.ok(stats);
+    }
+
+    @PutMapping("/mi-perfil/actualizar-carrera")
+    public ResponseEntity<?> actualizarCarrera(
+            Authentication authentication,
+            @RequestBody Map<String, String> body) {
+
+        try {
+            String email = authentication.getName();
+            String nuevaCarrera = body.get("carrera");
+
+            if (nuevaCarrera == null || nuevaCarrera.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "La carrera no puede estar vacía"));
+            }
+
+            Usuario usuario = usuarioService.buscarPorEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            usuario.setCarrera(nuevaCarrera);
+            usuarioService.guardar(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Carrera actualizada correctamente",
+                    "carrera", nuevaCarrera
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
 
 }

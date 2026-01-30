@@ -28,9 +28,9 @@ public class TarjetaController {
     private final UsuarioRepository usuarioRepo;
     private final TarjetaRfidRepository tarjetaRepo;
 
-    public TarjetaController(TarjetaService tarjetaService, 
-                             UsuarioRepository usuarioRepo,
-                             TarjetaRfidRepository tarjetaRepo) {
+    public TarjetaController(TarjetaService tarjetaService,
+            UsuarioRepository usuarioRepo,
+            TarjetaRfidRepository tarjetaRepo) {
         this.tarjetaService = tarjetaService;
         this.usuarioRepo = usuarioRepo;
         this.tarjetaRepo = tarjetaRepo;
@@ -98,11 +98,16 @@ public class TarjetaController {
         }
     }
 
-    // 5. VERIFICAR TARJETA (PARA EL BAR)
     @GetMapping("/verificar")
     public ResponseEntity<?> verificarTarjeta(@RequestParam String uid) {
         try {
-            TarjetaRfid tarjeta = tarjetaService.buscarPorUid(uid);
+            // ✅ LIMPIAR UID: Remover espacios, saltos de línea, y caracteres raros
+            String uidLimpio = uid.trim().replaceAll("[^0-9A-Za-z]", "");
+
+            System.out.println("🔍 UID recibido: [" + uid + "]");
+            System.out.println("✅ UID limpio: [" + uidLimpio + "]");
+
+            TarjetaRfid tarjeta = tarjetaService.buscarPorUid(uidLimpio);
 
             if (tarjeta == null) {
                 return ResponseEntity.status(404)
@@ -119,9 +124,9 @@ public class TarjetaController {
             return ResponseEntity.ok(Map.of(
                     "uid", tarjeta.getTarjetaUid(),
                     "saldo", usuario.getSaldo(),
-                    "nombreCompleto", usuario.getNombreCompleto() != null 
-                            ? usuario.getNombreCompleto() 
-                            : usuario.getEmail(),
+                    "nombreCompleto", usuario.getNombreCompleto() != null
+                    ? usuario.getNombreCompleto()
+                    : usuario.getEmail(),
                     "usuario", usuario.getEmail()
             ));
 
@@ -131,15 +136,15 @@ public class TarjetaController {
         }
     }
 
-    // 6.  OBTENER TARJETA DE UN USUARIO (PARA EL PERFIL DEL ESTUDIANTE)
+    // 6. OBTENER TARJETA DE UN USUARIO (PARA EL PERFIL DEL ESTUDIANTE)
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<?> obtenerTarjetaPorUsuario(@PathVariable Long usuarioId) {
         try {
             Usuario usuario = usuarioRepo.findById(usuarioId)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-            
+
             TarjetaRfid tarjeta = tarjetaRepo.findByUsuario(usuario).orElse(null);
-            
+
             if (tarjeta == null) {
                 return ResponseEntity.ok(Map.of(
                         "codigoRfid", "—",
@@ -148,18 +153,17 @@ public class TarjetaController {
                         "mensaje", "No tienes tarjeta asignada"
                 ));
             }
-            
+
             return ResponseEntity.ok(Map.of(
                     "codigoRfid", tarjeta.getTarjetaUid(),
                     "estado", tarjeta.getEstado(),
                     "fechaEmision", "—",
                     "bloqueada", "BLOQUEADA".equalsIgnoreCase(tarjeta.getEstado())
             ));
-            
+
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(Map.of("error", "Error al obtener tarjeta: " + e.getMessage()));
         }
     }
-
 }
